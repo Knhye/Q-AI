@@ -23,7 +23,7 @@ public class RefreshToken {
     @Column(nullable = false)
     private LocalDateTime expiryDatetime;
 
-    @OneToOne(fetch = FetchType.EAGER)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private Users user;
 

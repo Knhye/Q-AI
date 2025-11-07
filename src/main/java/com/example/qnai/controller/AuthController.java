@@ -2,8 +2,9 @@ package com.example.qnai.controller;
 
 
 import com.example.qnai.common.ApiResponse;
+import com.example.qnai.dto.refreshToken.response.RefreshResponse;
 import com.example.qnai.dto.user.request.LoginRequest;
-import com.example.qnai.dto.user.request.LogoutRequest;
+import com.example.qnai.dto.refreshToken.request.RefreshRequest;
 import com.example.qnai.dto.user.request.SignupRequest;
 import com.example.qnai.dto.user.response.LoginResponse;
 import com.example.qnai.service.AuthService;
@@ -35,5 +36,9 @@ public class AuthController {
         return ApiResponse.ok(response, "로그인이 성공적으로 완료되었습니다.");
     }
 
-
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<RefreshResponse>> refresh(@Valid @RequestBody RefreshRequest request){
+        RefreshResponse response = authService.refresh(request);
+        return ApiResponse.ok(response, "액세스 토큰이 성공적으로 발급되었습니다.");
+    }
 }

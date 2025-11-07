@@ -54,6 +54,23 @@ public class SecurityConfig {
                                 .requestMatchers("/api/auth/**").permitAll()
                                 .anyRequest().authenticated()
                 )
+                .exceptionHandling(handling -> handling
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            // 인증 실패 (401 Unauthorized) 처리
+                            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                            response.setContentType("application/json;charset=UTF-8");
+                            // 커스텀 ApiResponse를 사용하여 응답 본문 작성
+                            String json = objectMapper.writeValueAsString(ApiResponse.fail("인증에 실패하였습니다.", HttpStatus.UNAUTHORIZED));
+                            response.getWriter().write(json);
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            // 인가 실패 (403 Forbidden) 처리
+                            response.setStatus(HttpStatus.FORBIDDEN.value());
+                            response.setContentType("application/json;charset=UTF-8");
+                            String json = objectMapper.writeValueAsString(ApiResponse.fail("접근 권한이 없습니다.", HttpStatus.FORBIDDEN));
+                            response.getWriter().write(json);
+                        })
+                )
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return httpSecurity.build();
