@@ -1,6 +1,7 @@
 package com.example.qnai.service;
 
 import com.example.qnai.dto.user.request.LogoutRequest;
+import com.example.qnai.dto.user.response.UserDetailResponse;
 import com.example.qnai.entity.RefreshToken;
 import com.example.qnai.entity.Users;
 import com.example.qnai.global.exception.InvalidTokenException;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.orm.hibernate5.SpringSessionContext;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,5 +40,18 @@ public class UserService {
         refreshTokenRepository.deleteByToken(refreshTokenValue);
 
         SecurityContextHolder.clearContext();
+    }
+
+    @Transactional(readOnly = true)
+    public UserDetailResponse getUserDetail(Long id) {
+        Users user = userRepository.findById(id)
+                .orElseThrow(() -> new UsernameNotFoundException("유저가 존재하지 않습니다."));
+
+        return UserDetailResponse.builder()
+                .userId(user.getId())
+                .email(user.getEmail())
+                .nickname(user.getNickname())
+                .mainSubject(user.getMainSubject())
+                .build();
     }
 }
