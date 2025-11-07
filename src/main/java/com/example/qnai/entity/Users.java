@@ -55,4 +55,10 @@ public class Users {
     public void preUpdate(){
         this.updatedAt = LocalDateTime.now();
     }
+
+    public void updateInfo(String email, String nickname, Subject mainSubject) {
+        this.email = email;
+        this.nickname = nickname;
+        this.mainSubject = mainSubject;
+    }
 }
