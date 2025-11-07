@@ -26,4 +26,9 @@ public class RefreshToken {
     @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private Users user;
+
+    public void updateToken(String newToken, LocalDateTime newExpiryDatetime) {
+        this.token = newToken;
+        this.expiryDatetime = newExpiryDatetime;
+    }
 }

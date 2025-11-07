@@ -16,6 +16,7 @@ public class ApiResponse<T> {
     private String message;
     private boolean success;
 
+    // controller 용
     public static <T> ResponseEntity<ApiResponse<T>> ok(T data, String message){
         return ResponseEntity.status(200).body(
                 ApiResponse.<T>builder()
@@ -42,5 +43,20 @@ public class ApiResponse<T> {
                     .message(message)
                     .build()
         );
+    }
+
+    //filter, handler 용
+    public static <T> ApiResponse<T> body(String message) {
+        return ApiResponse.<T>builder()
+                .success(true)
+                .message(message)
+                .build();
+    }
+
+    public static <T> ApiResponse<T> error(String message) {
+        return ApiResponse.<T>builder()
+                .success(false)
+                .message(message)
+                .build();
     }
 }

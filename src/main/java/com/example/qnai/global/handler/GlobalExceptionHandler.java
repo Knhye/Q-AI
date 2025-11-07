@@ -1,11 +1,13 @@
 package com.example.qnai.global.handler;
 
 import com.example.qnai.common.ApiResponse;
+import com.example.qnai.global.exception.InvalidTokenException;
+import com.example.qnai.global.exception.NotLoggedInException;
+import com.example.qnai.global.exception.NotValidTokenException;
 import com.example.qnai.global.exception.UserAlreadyExistException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
-import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,6 +22,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleUserAlreadyExistException(UserAlreadyExistException e){
         System.out.println(e.getMessage());
         return ApiResponse.fail(e.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(NotValidTokenException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNotValidTokenException(NotValidTokenException e){
+        System.out.println(e.getMessage());
+        return ApiResponse.fail(e.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(NotLoggedInException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNotLoggedInException(NotLoggedInException e){
+        System.out.println(e.getMessage());
+        return ApiResponse.fail(e.getMessage(), HttpStatus.UNAUTHORIZED);
     }
 
     //요청 값이 올바르지 않을 때
@@ -51,5 +65,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleException(Exception e){
         System.out.println(e.getMessage());
         return ApiResponse.fail(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidTokenException(InvalidTokenException e){
+        System.out.println(e.getMessage());
+        return ApiResponse.fail(e.getMessage(), HttpStatus.UNAUTHORIZED);
     }
 }
