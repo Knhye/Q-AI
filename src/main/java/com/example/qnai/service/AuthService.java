@@ -19,6 +19,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -51,30 +52,44 @@ public class AuthService {
                 .build();
     }
 
-    public LoginResponse login(LoginRequest request){
-        // ID PW 검증
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+    @Transactional
+    public LoginResponse login(LoginRequest request) {
+        // ID, PW 검증
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+        );
 
         Users user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("유저가 존재하지 않습니다."));
-        // 토큰 생성
+
+//        // 기존 RefreshToken이 존재하면 삭제
+//        refreshTokenRepository.findByUser(user)
+//                .ifPresent(existing -> {
+//                    refreshTokenRepository.delete(existing);
+//                    refreshTokenRepository.flush();
+//                });
+
+        // 새 토큰 생성
         String accessToken = tokenProvider.createAccessToken(request.getEmail());
         String refreshToken = tokenProvider.createRefreshToken(request.getEmail());
 
-        //RT 저장
-        RefreshToken saveRefreshToken = RefreshToken.builder()
-                .token(refreshToken)
-                .expiryDatetime(LocalDateTime.now().plusDays(7))
-                .user(user)
-                .build();
+        // 새로운 RefreshToken 저장
+        RefreshToken refreshTokenEntity = refreshTokenRepository.findByUser(user)
+                .map(existing -> existing.updateToken(refreshToken, LocalDateTime.now().plusDays(7))) // update 메서드 사용
+                .orElseGet(() -> RefreshToken.builder()
+                        .token(refreshToken)
+                        .expiryDatetime(LocalDateTime.now().plusDays(7))
+                        .user(user)
+                        .build());
 
-        refreshTokenRepository.save(saveRefreshToken);
+        refreshTokenRepository.save(refreshTokenEntity);
 
         return LoginResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .build();
     }
+
 
     public RefreshResponse refresh(RefreshRequest requestDto){
         if(!tokenProvider.validateToken(requestDto.getRefreshToken())){

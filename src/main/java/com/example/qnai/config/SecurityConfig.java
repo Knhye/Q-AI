@@ -1,6 +1,7 @@
 package com.example.qnai.config;
 
 import com.example.qnai.common.ApiResponse;
+import com.example.qnai.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -46,6 +47,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception{
         //csrf 비활성화
         httpSecurity
+                .userDetailsService(userDetailService)
                 .csrf(AbstractHttpConfigurer:: disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(

@@ -27,8 +27,9 @@ public class RefreshToken {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private Users user;
 
-    public void updateToken(String newToken, LocalDateTime newExpiryDatetime) {
+    public RefreshToken updateToken(String newToken, LocalDateTime newExpiryDatetime) {
         this.token = newToken;
         this.expiryDatetime = newExpiryDatetime;
+        return this;
     }
 }

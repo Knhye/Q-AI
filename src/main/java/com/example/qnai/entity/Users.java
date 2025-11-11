@@ -45,6 +45,10 @@ public class Users {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean isDeleted = false;
+
     @PrePersist
     public void prePersist(){
         this.createdAt = LocalDateTime.now();
@@ -60,5 +64,13 @@ public class Users {
         this.email = email;
         this.nickname = nickname;
         this.mainSubject = mainSubject;
+    }
+
+    public void updatePassword(String newHashedPassword) {
+        this.password = newHashedPassword;
+    }
+
+    public void delete() {
+        this.isDeleted = true;
     }
 }

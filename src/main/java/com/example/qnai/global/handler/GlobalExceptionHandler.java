@@ -1,10 +1,7 @@
 package com.example.qnai.global.handler;
 
 import com.example.qnai.common.ApiResponse;
-import com.example.qnai.global.exception.InvalidTokenException;
-import com.example.qnai.global.exception.NotLoggedInException;
-import com.example.qnai.global.exception.NotValidTokenException;
-import com.example.qnai.global.exception.UserAlreadyExistException;
+import com.example.qnai.global.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -34,6 +31,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleNotLoggedInException(NotLoggedInException e){
         System.out.println(e.getMessage());
         return ApiResponse.fail(e.getMessage(), HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(UserAlreadyLoggedOutException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUserAlreadyLoggedOutException(UserAlreadyLoggedOutException e){
+        System.out.println(e.getMessage());
+        return ApiResponse.fail(e.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(NotAcceptableUserException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNotAcceptableUserException(NotAcceptableUserException e){
+        System.out.println(e.getMessage());
+        return ApiResponse.fail(e.getMessage(), HttpStatus.FORBIDDEN);
     }
 
     //요청 값이 올바르지 않을 때

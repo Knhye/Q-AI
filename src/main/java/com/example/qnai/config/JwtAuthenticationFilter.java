@@ -1,5 +1,6 @@
 package com.example.qnai.config;
 
+import com.example.qnai.service.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,6 +37,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String token = header.substring(7);
 
                 if (tokenProvider.validateToken(token)) {
+                    // 3. 블랙리스트 확인 - 로그아웃된 토큰인지 체크
+                    if (tokenProvider.isBlacklisted(token)) {
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
+                                "로그아웃된 토큰입니다.");
+                        return;
+                    }
+
                     String username = tokenProvider.extractUsername(token);
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
@@ -48,6 +56,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         } catch(Exception e){
+            System.out.println("예외 발생");
             SecurityContextHolder.clearContext();
         }
 
