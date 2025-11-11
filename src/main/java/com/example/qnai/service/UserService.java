@@ -38,28 +38,9 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenProvider tokenProvider;
     private final RedisTemplate<String, String> redisTemplate;
-
-//    @Transactional
-//    public void logout(LogoutRequest request) {
-//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-//
-//        if (authentication == null || !authentication.isAuthenticated()) {
-//
-//            throw new NotLoggedInException("로그인된 사용자가 아닙니다.");
-//        }
-//        String refreshTokenValue = request.getRefreshToken();
-//
-//        refreshTokenRepository.findByToken(refreshTokenValue)
-//                .orElseThrow(() -> new InvalidTokenException("토큰이 존재하지 않습니다."));
-//
-//        refreshTokenRepository.deleteByToken(refreshTokenValue);
-//
-//        SecurityContextHolder.clearContext();
-//    }
 
     @Transactional(readOnly = true)
     public UserDetailResponse getUserDetail(Long id) {
