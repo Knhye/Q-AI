@@ -37,7 +37,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String token = header.substring(7);
 
                 if (tokenProvider.validateToken(token)) {
-                    // 3. 블랙리스트 확인 - 로그아웃된 토큰인지 체크
                     if (tokenProvider.isBlacklisted(token)) {
                         response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
                                 "로그아웃된 토큰입니다.");

@@ -36,6 +36,9 @@ public class Users {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Notebook> notebooks;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<QnA> qnaList;
+
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private RefreshToken refreshToken;
 
