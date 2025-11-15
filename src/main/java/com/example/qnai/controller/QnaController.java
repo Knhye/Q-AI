@@ -37,10 +37,10 @@ public class QnaController {
         return ApiResponse.ok(response, "최근 질문 타이틀 조회에 성공하였습니다.");
     }
 
-    @PatchMapping("/{id}")
+    @PostMapping("/{id}")
     public ResponseEntity<ApiResponse<AnswerUpdateResponse>> updateAnswer(HttpServletRequest httpServletRequest, @PathVariable Long id, @Valid @RequestBody AnswerUpdateRequest request){
         AnswerUpdateResponse response = qnaService.updateAnswer(httpServletRequest, id, request);
-        return ApiResponse.ok(response, "응답 수정에 성공하였습니다.");
+        return ApiResponse.ok(response, "응답을 저장하였습니다.");
     }
 
     @PostMapping("/feedback")
