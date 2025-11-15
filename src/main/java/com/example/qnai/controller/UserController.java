@@ -4,6 +4,7 @@ import com.example.qnai.common.ApiResponse;
 import com.example.qnai.dto.user.request.LogoutRequest;
 import com.example.qnai.dto.user.request.UserPasswordUpdateRequest;
 import com.example.qnai.dto.user.request.UserUpdateRequest;
+import com.example.qnai.dto.user.response.UpdateUserPasswordResponse;
 import com.example.qnai.dto.user.response.UserDetailResponse;
 import com.example.qnai.dto.user.response.UserUpdateResponse;
 import com.example.qnai.service.UserService;
@@ -37,9 +38,9 @@ public class UserController {
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> updateUserPassword(@PathVariable Long id, @Valid @RequestBody UserPasswordUpdateRequest request){
-        userService.updateUserPassword(id, request);
-        return ApiResponse.ok("비밀번호를 성공적으로 변경하였습니다.");
+    public ResponseEntity<ApiResponse<UpdateUserPasswordResponse>> updateUserPassword(@PathVariable Long id, @Valid @RequestBody UserPasswordUpdateRequest request){
+        UpdateUserPasswordResponse response = userService.updateUserPassword(id, request);
+        return ApiResponse.ok(response, "비밀번호를 성공적으로 변경하였습니다.");
     }
 
     @DeleteMapping("/{id}")

@@ -4,6 +4,7 @@ import com.example.qnai.config.TokenProvider;
 import com.example.qnai.dto.user.request.LogoutRequest;
 import com.example.qnai.dto.user.request.UserPasswordUpdateRequest;
 import com.example.qnai.dto.user.request.UserUpdateRequest;
+import com.example.qnai.dto.user.response.UpdateUserPasswordResponse;
 import com.example.qnai.dto.user.response.UserDetailResponse;
 import com.example.qnai.dto.user.response.UserUpdateResponse;
 import com.example.qnai.entity.RefreshToken;
@@ -77,7 +78,7 @@ public class UserService {
     }
 
     @Transactional
-    public void updateUserPassword(Long id, UserPasswordUpdateRequest request) {
+    public UpdateUserPasswordResponse updateUserPassword(Long id, UserPasswordUpdateRequest request) {
         Users user = userRepository.findById(id)
                 .orElseThrow(() -> new UsernameNotFoundException("유저가 존재하지 않습니다."));
 
@@ -92,6 +93,10 @@ public class UserService {
         String newHashedPassword = passwordEncoder.encode(request.getNewPassword());
 
         user.updatePassword(newHashedPassword);
+
+        return UpdateUserPasswordResponse.builder()
+                .id(user.getId())
+                .build();
     }
 
     @Transactional

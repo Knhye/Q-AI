@@ -51,6 +51,12 @@ public class GlobalExceptionHandler {
         return ApiResponse.fail(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleResourceNotFoundException(ResourceNotFoundException e){
+        System.out.println(e.getMessage());
+        return ApiResponse.fail(e.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
     //요청 값이 올바르지 않을 때
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {

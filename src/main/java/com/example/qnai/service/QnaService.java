@@ -2,12 +2,12 @@ package com.example.qnai.service;
 
 import com.example.qnai.config.TokenProvider;
 import com.example.qnai.dto.qna.request.QnaGenerateRequest;
+import com.example.qnai.dto.qna.response.QnaDetailResponse;
 import com.example.qnai.dto.qna.response.QnaGenerateResponse;
+import com.example.qnai.dto.qna.response.QuestionTitlesResponse;
 import com.example.qnai.entity.QnA;
 import com.example.qnai.entity.Users;
-import com.example.qnai.global.exception.AiNoResponseException;
-import com.example.qnai.global.exception.InvalidTokenException;
-import com.example.qnai.global.exception.NotLoggedInException;
+import com.example.qnai.global.exception.*;
 import com.example.qnai.repository.QnaRepository;
 import com.example.qnai.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -80,4 +81,42 @@ public class QnaService {
                 .level(response.getLevel())
                 .build();
     }
+
+    @Transactional(readOnly = true)
+    public QnaDetailResponse getQnaById(HttpServletRequest httpServletRequest, Long id) {
+        QnA qnA = qnaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
+
+        String email = extractUserEmail(httpServletRequest);
+        if(!email.equals(qnA.getUser().getEmail())){
+            throw new NotAcceptableUserException("다른 유저의 질의응답은 조회할 수 없습니다.");
+        }
+
+        return QnaDetailResponse.builder()
+                .id(qnA.getId())
+                .question(qnA.getQuestion())
+                .answer(qnA.getAnswer())
+                .feedback(qnA.getFeedback())
+                .subject(qnA.getSubject())
+                .level(qnA.getLevel())
+                .build();
+
+    }
+
+    @Transactional(readOnly = true)
+    public List<QuestionTitlesResponse> getRecentQuestionTitles(HttpServletRequest httpServletRequest) {
+
+        List<QnA> qnAList = qnaRepository.findAllByUserEmail(
+                extractUserEmail(httpServletRequest)
+        );
+
+        return qnAList.stream()
+                .map(qna -> QuestionTitlesResponse.builder()
+                        .id(qna.getId())
+                        .question(qna.getQuestion())
+                        .build()
+                )
+                .toList();
+    }
+
 }
