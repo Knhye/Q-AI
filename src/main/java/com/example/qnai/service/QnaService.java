@@ -1,7 +1,9 @@
 package com.example.qnai.service;
 
 import com.example.qnai.config.TokenProvider;
+import com.example.qnai.dto.qna.request.AnswerUpdateRequest;
 import com.example.qnai.dto.qna.request.QnaGenerateRequest;
+import com.example.qnai.dto.qna.response.AnswerUpdateResponse;
 import com.example.qnai.dto.qna.response.QnaDetailResponse;
 import com.example.qnai.dto.qna.response.QnaGenerateResponse;
 import com.example.qnai.dto.qna.response.QuestionTitlesResponse;
@@ -119,4 +121,23 @@ public class QnaService {
                 .toList();
     }
 
+    @Transactional
+    public AnswerUpdateResponse updateAnswer(HttpServletRequest httpServletRequest, Long id, AnswerUpdateRequest request) {
+        QnA qnA = qnaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
+
+        String email = extractUserEmail(httpServletRequest);
+
+        if(!email.equals(qnA.getUser().getEmail())){
+            throw new NotAcceptableUserException("다른 유저의 질의응답은 수정할 수 없습니다.");
+        }
+
+        qnA.setAnswer(request.getAnswer());
+        qnaRepository.save(qnA);
+
+        return AnswerUpdateResponse.builder()
+                .id(qnA.getId())
+                .answer(qnA.getAnswer())
+                .build();
+    }
 }

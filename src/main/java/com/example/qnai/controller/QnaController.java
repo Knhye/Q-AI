@@ -1,7 +1,9 @@
 package com.example.qnai.controller;
 
 import com.example.qnai.common.ApiResponse;
+import com.example.qnai.dto.qna.request.AnswerUpdateRequest;
 import com.example.qnai.dto.qna.request.QnaGenerateRequest;
+import com.example.qnai.dto.qna.response.AnswerUpdateResponse;
 import com.example.qnai.dto.qna.response.QnaDetailResponse;
 import com.example.qnai.dto.qna.response.QnaGenerateResponse;
 import com.example.qnai.dto.qna.response.QuestionTitlesResponse;
@@ -19,7 +21,7 @@ import java.util.List;
 @RequestMapping("/api/qna")
 public class QnaController {
     private final QnaService qnaService;
-    @PostMapping("generate/question")
+    @PostMapping("/question")
     public ResponseEntity<ApiResponse<QnaGenerateResponse>> generateQuestion(HttpServletRequest httpServletRequest, @Valid @RequestBody QnaGenerateRequest request){
         QnaGenerateResponse response = qnaService.generateQuestion(httpServletRequest, request);
         return ApiResponse.ok(response, "질문이 생성되었습니다.");
@@ -35,6 +37,12 @@ public class QnaController {
     public ResponseEntity<ApiResponse<List<QuestionTitlesResponse>>> getRecentQuestionTitles(HttpServletRequest httpServletRequest){
         List<QuestionTitlesResponse> response = qnaService.getRecentQuestionTitles(httpServletRequest);
         return ApiResponse.ok(response, "최근 질문 타이틀 조회에 성공하였습니다.");
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<ApiResponse<AnswerUpdateResponse>> updateAnswer(HttpServletRequest httpServletRequest, @PathVariable Long id, @Valid @RequestBody AnswerUpdateRequest request){
+        AnswerUpdateResponse response = qnaService.updateAnswer(httpServletRequest, id, request);
+        return ApiResponse.ok(response, "응답 수정에 성공하였습니다.");
     }
 
 

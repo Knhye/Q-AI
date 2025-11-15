@@ -8,11 +8,12 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.HashMap;
 import java.util.Map;
 
-@RestController
+@RestControllerAdvice
 public class GlobalExceptionHandler {
     //유저가 이미 존재할 때(동일한 이메일이 존재할 때)
     @ExceptionHandler(UserAlreadyExistException.class)
@@ -59,33 +60,15 @@ public class GlobalExceptionHandler {
 
     //요청 값이 올바르지 않을 때
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-
-        // 커스텀 응답 본문 구조
-        Map<String, String> errors = new HashMap<>();
-
-        // 예외 객체에서 BindingResult (오류 목록)를 가져와 반복 처리
-        ex.getBindingResult().getAllErrors().forEach(error -> {
-            String fieldName; // 필드 레벨 오류가 아닐 경우 기본값
-            String errorMessage = error.getDefaultMessage();
-
-            // 오류 타입에 따라 필드명 추출
-            if (error instanceof FieldError) {
-                fieldName = ((FieldError) error).getField();
-            } else {
-                fieldName = error.getObjectName();
-            }
-
-            errors.put(fieldName, errorMessage);
-        });
-
-        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    public ResponseEntity<ApiResponse<String>> handleValidationExceptions(MethodArgumentNotValidException e) {
+        System.out.println(e.getMessage());
+        return ApiResponse.fail("요청값이 올바르지 않습니다.", HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception e){
         System.out.println(e.getMessage());
-        return ApiResponse.fail(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        return ApiResponse.fail("서버 오류가 발생하였습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @ExceptionHandler(InvalidTokenException.class)
