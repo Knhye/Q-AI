@@ -3,6 +3,7 @@ package com.example.qnai.service;
 import com.example.qnai.dto.gpt.response.OpenAIChatResponse;
 import com.example.qnai.dto.qna.request.QnaGenerateRequest;
 import com.example.qnai.dto.qna.response.QnaGenerateResponse;
+import com.example.qnai.global.exception.AiNoResponseException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -22,7 +23,7 @@ public class GptOssService {
             .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
             .build();
 
-    public QnaGenerateResponse generateQuestion(QnaGenerateRequest request) {
+    public String generateQuestion(QnaGenerateRequest request) {
 
         String prompt = String.format("""
         You are an expert technical interviewer.
@@ -64,20 +65,72 @@ public class GptOssService {
                 || openaiResponse.getChoices().getFirst().getMessage() == null
                 || openaiResponse.getChoices().getFirst().getMessage().getContent() == null) {
 
-            throw new IllegalStateException("OpenAI 응답이 올바르지 않습니다.");
+            throw new AiNoResponseException("OpenAI 응답이 올바르지 않습니다.");
         }
 
         String content = openaiResponse.getChoices().getFirst().getMessage().getContent();
 
         // 응답 DTO 구성
 
-        return QnaGenerateResponse.builder()
-                .question(content)
-                .subject(request.getSubject())
-                .level(request.getLevel())
-                .build();
+        return content;
 
     }
 
 
+    public String generateFeedback(String question, String answer) {
+        String prompt = String.format("""
+        You are an experienced technical interviewer.
+        Based on the following question and answer, provide constructive feedback on the answer.
+
+        Requirements:
+        - Evaluate how well the answer addresses the technical intent of the question.
+        - Provide clear improvement points and guidance from an IT and software engineering perspective.
+        - Output must be written in Korean using polite and respectful language.
+        - Do not use any images or emoticons. Text only.
+        - Write with clarity and high readability.
+        - Do not include meta commentary or any content other than the feedback itself.
+
+        [question]
+        %s
+
+        [answer]
+        %s
+        """,
+                question,
+                answer
+        );
+
+        // OpenAI 요청 바디
+        Map<String, Object> body = Map.of(
+                "model", "gpt-4o-mini",
+                "messages", List.of(
+                        Map.of(
+                                "role", "user",
+                                "content", prompt
+                        )
+                )
+        );
+
+        OpenAIChatResponse openaiResponse = webClient.post()
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + API_KEY)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(OpenAIChatResponse.class)
+                .block();
+
+        if (openaiResponse == null
+                || openaiResponse.getChoices() == null
+                || openaiResponse.getChoices().isEmpty()
+                || openaiResponse.getChoices().getFirst().getMessage() == null
+                || openaiResponse.getChoices().getFirst().getMessage().getContent() == null) {
+
+            throw new AiNoResponseException("OpenAI 응답이 올바르지 않습니다.");
+        }
+
+        String feedback = openaiResponse.getChoices().getFirst().getMessage().getContent();
+
+        // 응답 DTO 구성
+
+        return feedback;
+    }
 }

@@ -2,11 +2,9 @@ package com.example.qnai.controller;
 
 import com.example.qnai.common.ApiResponse;
 import com.example.qnai.dto.qna.request.AnswerUpdateRequest;
+import com.example.qnai.dto.qna.request.FeedbackGenerateRequest;
 import com.example.qnai.dto.qna.request.QnaGenerateRequest;
-import com.example.qnai.dto.qna.response.AnswerUpdateResponse;
-import com.example.qnai.dto.qna.response.QnaDetailResponse;
-import com.example.qnai.dto.qna.response.QnaGenerateResponse;
-import com.example.qnai.dto.qna.response.QuestionTitlesResponse;
+import com.example.qnai.dto.qna.response.*;
 import com.example.qnai.service.QnaService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -45,5 +43,9 @@ public class QnaController {
         return ApiResponse.ok(response, "응답 수정에 성공하였습니다.");
     }
 
-
+    @PostMapping("/feedback")
+    public ResponseEntity<ApiResponse<FeedbackGenerateResponse>> generateFeedback(HttpServletRequest httpServletRequest, @Valid @RequestBody FeedbackGenerateRequest request){
+        FeedbackGenerateResponse response = qnaService.generateFeedback(httpServletRequest, request);
+        return ApiResponse.ok(response, "피드백이 생성되었습니다.");
+    }
 }

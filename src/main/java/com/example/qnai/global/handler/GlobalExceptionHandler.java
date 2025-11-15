@@ -58,6 +58,12 @@ public class GlobalExceptionHandler {
         return ApiResponse.fail(e.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(ResourceInconsistencyException.class)
+    public ResponseEntity<ApiResponse<Void>> handleResourceInconsistencyException(ResourceInconsistencyException e){
+        System.out.println(e.getMessage());
+        return ApiResponse.fail(e.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
     //요청 값이 올바르지 않을 때
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<String>> handleValidationExceptions(MethodArgumentNotValidException e) {
