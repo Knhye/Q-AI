@@ -29,6 +29,10 @@ public class Notebook {
     private List<QnA> qnAs;
 
     @Column(nullable = false)
+    @Builder.Default
+    private boolean isDeleted = false;
+
+    @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @Column(nullable = false)
