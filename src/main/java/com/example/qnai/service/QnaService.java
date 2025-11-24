@@ -193,7 +193,7 @@ public class QnaService {
         String email = extractUserEmail(httpServletRequest);
 
         if(!Objects.equals(qnA.getUser().getEmail(), email)){
-            throw new NotAcceptableUserException("다른 유저의 Qna는 삭제할 수 없습니다.");
+            throw new NotAcceptableUserException("다른 유저의 QnA는 삭제할 수 없습니다.");
         }
 
         qnA.delete();

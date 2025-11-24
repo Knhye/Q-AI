@@ -3,6 +3,7 @@ package com.example.qnai.controller;
 import com.example.qnai.common.ApiResponse;
 import com.example.qnai.dto.notebook.request.NotebookAddItemRequest;
 import com.example.qnai.dto.notebook.request.NotebookCreateRequest;
+import com.example.qnai.dto.notebook.request.NotebookExcludeItemRequest;
 import com.example.qnai.dto.notebook.response.NotebookCreateResponse;
 import com.example.qnai.service.NotebookService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,5 +35,11 @@ public class NotebookController {
     public ResponseEntity<ApiResponse<Void>> deleteNotebook(HttpServletRequest httpServletRequest, @PathVariable Long id){
         notebookService.deleteNotebook(httpServletRequest, id);
         return ApiResponse.ok("노트북을 삭제하였습니다.");
+    }
+
+    @DeleteMapping("/items")
+    public ResponseEntity<ApiResponse<Void>> excludeItemFromNotebook(HttpServletRequest httpServletRequest, @Valid @RequestBody NotebookExcludeItemRequest request){
+        notebookService.excludeItemFromNotebook(httpServletRequest, request);
+        return ApiResponse.ok("노트북에서 질의응답을 제외하였습니다.");
     }
 }

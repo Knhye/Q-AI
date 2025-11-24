@@ -3,6 +3,7 @@ package com.example.qnai.service;
 import com.example.qnai.config.TokenProvider;
 import com.example.qnai.dto.notebook.request.NotebookAddItemRequest;
 import com.example.qnai.dto.notebook.request.NotebookCreateRequest;
+import com.example.qnai.dto.notebook.request.NotebookExcludeItemRequest;
 import com.example.qnai.dto.notebook.response.NotebookCreateResponse;
 import com.example.qnai.entity.Notebook;
 import com.example.qnai.entity.QnA;
@@ -114,5 +115,28 @@ public class NotebookService {
         }
 
         notebook.delete();
+    }
+
+    @Transactional
+    public void excludeItemFromNotebook(HttpServletRequest httpServletRequest, NotebookExcludeItemRequest request) {
+        Notebook notebook = notebookRepository.findById(request.getNotebookId())
+                .orElseThrow(() -> new ResourceNotFoundException("해당 노트북이 존재하지 않습니다."));
+
+        QnA qnA = qnaRepository.findById(request.getQnaId())
+                .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
+
+        String email = extractUserEmail(httpServletRequest);
+
+        if(!notebook.getUser().getEmail().equals(email) || !qnA.getUser().getEmail().equals(email)){
+            throw new NotAcceptableUserException("다른 유저의 노트북 또는 질의응답에 접근할 수 없습니다.");
+        }
+
+        if (!notebook.getQnAs().contains(qnA)) {
+            throw new ResourceNotFoundException("해당 QnA는 현재 노트북에 포함되어 있지 않습니다.");
+        }
+
+        notebook.getQnAs().remove(qnA);
+
+        qnA.setNotebook(null);
     }
 }
