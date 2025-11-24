@@ -5,6 +5,7 @@ import com.example.qnai.dto.notebook.request.NotebookAddItemRequest;
 import com.example.qnai.dto.notebook.request.NotebookCreateRequest;
 import com.example.qnai.dto.notebook.request.NotebookExcludeItemRequest;
 import com.example.qnai.dto.notebook.response.NotebookCreateResponse;
+import com.example.qnai.dto.notebook.response.NotebookDetailResponse;
 import com.example.qnai.dto.notebook.response.NotebookListResponse;
 import com.example.qnai.service.NotebookService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,8 +48,14 @@ public class NotebookController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<NotebookListResponse>>> getNotebookList(HttpServletRequest request){
-        List<NotebookListResponse> response = notebookService.getNotebookList(request);
+    public ResponseEntity<ApiResponse<List<NotebookListResponse>>> getNotebookList(HttpServletRequest httpServletRequest){
+        List<NotebookListResponse> response = notebookService.getNotebookList(httpServletRequest);
         return ApiResponse.ok(response, "노트북 리스트를 조회하였습니다.");
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<NotebookDetailResponse>> getNotebookDetail(HttpServletRequest httpServletRequest, @PathVariable Long id){
+        NotebookDetailResponse response = notebookService.getNotebookDetail(httpServletRequest, id);
+        return ApiResponse.ok(response, "노트북 질의응답 리스트를 조회하였습니다.");
     }
 }

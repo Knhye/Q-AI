@@ -4,7 +4,9 @@ import com.example.qnai.config.TokenProvider;
 import com.example.qnai.dto.notebook.request.NotebookAddItemRequest;
 import com.example.qnai.dto.notebook.request.NotebookCreateRequest;
 import com.example.qnai.dto.notebook.request.NotebookExcludeItemRequest;
+import com.example.qnai.dto.notebook.response.Item;
 import com.example.qnai.dto.notebook.response.NotebookCreateResponse;
+import com.example.qnai.dto.notebook.response.NotebookDetailResponse;
 import com.example.qnai.dto.notebook.response.NotebookListResponse;
 import com.example.qnai.dto.qna.response.QuestionTitlesResponse;
 import com.example.qnai.entity.Notebook;
@@ -130,8 +132,16 @@ public class NotebookService {
         Notebook notebook = notebookRepository.findById(request.getNotebookId())
                 .orElseThrow(() -> new ResourceNotFoundException("해당 노트북이 존재하지 않습니다."));
 
+        if(notebook.isDeleted()){
+            throw new ResourceNotFoundException("삭제된 노트북입니다.");
+        }
+
         QnA qnA = qnaRepository.findById(request.getQnaId())
                 .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
+
+        if(qnA.isDeleted()){
+            throw new ResourceNotFoundException("삭제된 질의응답입니다.");
+        }
 
         String email = extractUserEmail(httpServletRequest);
 
@@ -150,9 +160,9 @@ public class NotebookService {
 
     //노트북 리스트 조회
     @Transactional(readOnly = true)
-    public List<NotebookListResponse> getNotebookList(HttpServletRequest request) {
+    public List<NotebookListResponse> getNotebookList(HttpServletRequest httpServletRequest) {
         List<Notebook> notebookList = notebookRepository.findAllByUserEmail(
-                extractUserEmail(request)
+                extractUserEmail(httpServletRequest)
         );
 
         return notebookList.stream()
@@ -163,5 +173,39 @@ public class NotebookService {
                         .build()
                 )
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public NotebookDetailResponse getNotebookDetail(HttpServletRequest httpServletRequest, Long id) {
+        Notebook notebook = notebookRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("해당 노트북을 찾을 수 없습니다."));
+
+        if(notebook.isDeleted()){
+            throw new ResourceNotFoundException("삭제된 노트북입니다.");
+        }
+
+        String email = extractUserEmail(httpServletRequest);
+
+        if(!notebook.getUser().getEmail().equals(email)){
+            throw new NotAcceptableUserException("다른 유저의 노트북에 접근할 수 없습니다.");
+        }
+
+        List<QnA> qnAList = qnaRepository.findAllByNotebook(notebook);
+
+        List<Item> items = qnAList.stream()
+                .filter(qna -> !qna.isDeleted())
+                .map(qna -> Item.builder()
+                        .question(qna.getQuestion())
+                        .answer(qna.getAnswer())
+                        .feedback(qna.getFeedback())
+                        .build()
+                )
+                .toList();
+
+        return NotebookDetailResponse.builder()
+                .notebookId(notebook.getId())
+                .name(notebook.getName())
+                .items(items)
+                .build();
     }
 }
