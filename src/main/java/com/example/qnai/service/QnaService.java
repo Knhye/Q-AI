@@ -197,6 +197,5 @@ public class QnaService {
         }
 
         qnA.delete();
-        qnaRepository.save(qnA);
     }
 }

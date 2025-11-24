@@ -48,4 +48,8 @@ public class Notebook {
     public void preUpdate(){
         this.updatedAt = LocalDateTime.now();
     }
+
+    public void delete() {
+        this.isDeleted = true;
+    }
 }

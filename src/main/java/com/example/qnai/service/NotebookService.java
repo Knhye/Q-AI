@@ -78,6 +78,10 @@ public class NotebookService {
         Notebook notebook = notebookRepository.findById(request.getNotebookId())
                 .orElseThrow(() -> new ResourceNotFoundException("해당 노트북이 존재하지 않습니다."));
 
+        if(notebook.isDeleted()){
+            throw new ResourceNotFoundException("삭제된 노트북입니다.");
+        }
+
         QnA qnA = qnaRepository.findById(request.getQnaId())
                 .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
 
@@ -92,5 +96,23 @@ public class NotebookService {
 
         //qna 노트북 설정
         qnA.setNotebook(notebook);
+    }
+
+    @Transactional
+    public void deleteNotebook(HttpServletRequest httpServletRequest, Long id) {
+        Notebook notebook = notebookRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("해당 노트북이 존재하지 않습니다."));
+
+        if(notebook.isDeleted()){
+            throw new ResourceNotFoundException("삭제된 노트북입니다.");
+        }
+
+        String email = extractUserEmail(httpServletRequest);
+
+        if(!notebook.getUser().getEmail().equals(email)){
+            throw new NotAcceptableUserException("다른 유저의 노트북에 접근할 수 없습니다.");
+        }
+
+        notebook.delete();
     }
 }

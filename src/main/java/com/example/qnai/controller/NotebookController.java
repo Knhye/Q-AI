@@ -10,10 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -31,5 +28,11 @@ public class NotebookController {
     public ResponseEntity<ApiResponse<Void>> addItemToNotebook(HttpServletRequest httpServletRequest, @Valid @RequestBody NotebookAddItemRequest request){
         notebookService.addItemToNotebook(httpServletRequest, request);
         return ApiResponse.ok("노트북에 질의응답을 추가하였습니다.");
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteNotebook(HttpServletRequest httpServletRequest, @PathVariable Long id){
+        notebookService.deleteNotebook(httpServletRequest, id);
+        return ApiResponse.ok("노트북을 삭제하였습니다.");
     }
 }
