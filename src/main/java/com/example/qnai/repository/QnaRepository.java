@@ -10,4 +10,6 @@ public interface QnaRepository extends JpaRepository<QnA, Long> {
     List<QnA> findAllByUserEmail(String userEmail);
 
     List<QnA> findAllByNotebook(Notebook notebook);
+
+    List<QnA> findAllByUserEmailOrderByUpdatedAtDesc(String s);
 }

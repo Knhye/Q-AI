@@ -30,6 +30,7 @@ public class QnaService {
     private final TokenProvider tokenProvider;
     private final GptOssService gptOssService;
 
+    //이메일 추출
     private String extractUserEmail(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
 
@@ -52,6 +53,7 @@ public class QnaService {
         return email;
     }
 
+    //질문 생성
     @Transactional
     public QnaGenerateResponse generateQuestion(HttpServletRequest httpServletRequest, QnaGenerateRequest request) {
         String email = extractUserEmail(httpServletRequest);
@@ -85,6 +87,7 @@ public class QnaService {
                 .build();
     }
 
+    //질의응답 조회
     @Transactional(readOnly = true)
     public QnaDetailResponse getQnaById(HttpServletRequest httpServletRequest, Long id) {
         QnA qnA = qnaRepository.findById(id)
@@ -106,14 +109,17 @@ public class QnaService {
                 .feedback(qnA.getFeedback())
                 .subject(qnA.getSubject())
                 .level(qnA.getLevel())
+                .createdAt(qnA.getCreatedAt())
+                .updatedAt(qnA.getUpdatedAt())
                 .build();
 
     }
 
+    //최근 업데이트 된 순으로 질문 조회
     @Transactional(readOnly = true)
     public List<QuestionTitlesResponse> getRecentQuestionTitles(HttpServletRequest httpServletRequest) {
 
-        List<QnA> qnAList = qnaRepository.findAllByUserEmail(
+        List<QnA> qnAList = qnaRepository.findAllByUserEmailOrderByUpdatedAtDesc( // 최신순 정렬 메서드
                 extractUserEmail(httpServletRequest)
         );
 
@@ -127,6 +133,7 @@ public class QnaService {
                 .toList();
     }
 
+    //응답 수정
     @Transactional
     public AnswerUpdateResponse updateAnswer(HttpServletRequest httpServletRequest, Long id, AnswerUpdateRequest request) {
         QnA qnA = qnaRepository.findById(id)
@@ -148,9 +155,11 @@ public class QnaService {
         return AnswerUpdateResponse.builder()
                 .id(qnA.getId())
                 .answer(qnA.getAnswer())
+                .updatedAt(qnA.getUpdatedAt())
                 .build();
     }
 
+    //피드백 생성
     @Transactional
     public FeedbackGenerateResponse generateFeedback(HttpServletRequest httpServletRequest, FeedbackGenerateRequest request) {
         QnA qnA = qnaRepository.findById(request.getQnaId())
@@ -178,9 +187,11 @@ public class QnaService {
         return FeedbackGenerateResponse.builder()
                 .qnaId(qnA.getId())
                 .feedback(qnA.getFeedback())
+                .updatedAt(qnA.getUpdatedAt())
                 .build();
     }
 
+    //질의응답 삭제
     @Transactional
     public void deleteQna(HttpServletRequest httpServletRequest, Long id) {
         QnA qnA = qnaRepository.findById(id)

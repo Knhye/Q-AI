@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 @AllArgsConstructor
 @Builder
@@ -16,4 +18,6 @@ public class QnaDetailResponse {
     private String feedback;
     private Subject subject;
     private Level level;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
