@@ -90,6 +90,10 @@ public class QnaService {
         QnA qnA = qnaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
 
+        if(qnA.isDeleted()){
+            throw new ResourceNotFoundException("삭제된 질의응답입니다.");
+        }
+
         String email = extractUserEmail(httpServletRequest);
         if(!email.equals(qnA.getUser().getEmail())){
             throw new NotAcceptableUserException("다른 유저의 질의응답은 조회할 수 없습니다.");
@@ -114,6 +118,7 @@ public class QnaService {
         );
 
         return qnAList.stream()
+                .filter(qna -> !qna.isDeleted())
                 .map(qna -> QuestionTitlesResponse.builder()
                         .id(qna.getId())
                         .question(qna.getQuestion())
@@ -126,6 +131,10 @@ public class QnaService {
     public AnswerUpdateResponse updateAnswer(HttpServletRequest httpServletRequest, Long id, AnswerUpdateRequest request) {
         QnA qnA = qnaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
+
+        if(qnA.isDeleted()){
+            throw new ResourceNotFoundException("삭제된 질의응답입니다.");
+        }
 
         String email = extractUserEmail(httpServletRequest);
 
@@ -146,6 +155,10 @@ public class QnaService {
     public FeedbackGenerateResponse generateFeedback(HttpServletRequest httpServletRequest, FeedbackGenerateRequest request) {
         QnA qnA = qnaRepository.findById(request.getQnaId())
                 .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
+
+        if(qnA.isDeleted()){
+            throw new ResourceNotFoundException("삭제된 질의응답입니다.");
+        }
 
         String email = extractUserEmail(httpServletRequest);
 
