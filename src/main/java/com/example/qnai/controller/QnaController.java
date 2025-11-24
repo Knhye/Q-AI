@@ -37,7 +37,7 @@ public class QnaController {
         return ApiResponse.ok(response, "최근 질문 타이틀 조회에 성공하였습니다.");
     }
 
-    @PostMapping("/{id}")
+    @PatchMapping("/{id}")
     public ResponseEntity<ApiResponse<AnswerUpdateResponse>> updateAnswer(HttpServletRequest httpServletRequest, @PathVariable Long id, @Valid @RequestBody AnswerUpdateRequest request){
         AnswerUpdateResponse response = qnaService.updateAnswer(httpServletRequest, id, request);
         return ApiResponse.ok(response, "응답을 저장하였습니다.");
@@ -47,5 +47,11 @@ public class QnaController {
     public ResponseEntity<ApiResponse<FeedbackGenerateResponse>> generateFeedback(HttpServletRequest httpServletRequest, @Valid @RequestBody FeedbackGenerateRequest request){
         FeedbackGenerateResponse response = qnaService.generateFeedback(httpServletRequest, request);
         return ApiResponse.ok(response, "피드백이 생성되었습니다.");
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteQna(HttpServletRequest httpServletRequest, @PathVariable Long id){
+        qnaService.deleteQna(httpServletRequest, id);
+        return ApiResponse.ok("질의응답이 삭제되었습니다.");
     }
 }

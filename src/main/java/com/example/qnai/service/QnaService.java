@@ -20,6 +20,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -152,7 +153,7 @@ public class QnaService {
             throw new NotAcceptableUserException("다른 유저의 질의응답에 피드백을 생성할 수 없습니다.");
         }
 
-        if(!qnA.getQuestion().equals(request.getQuestion()) || !qnA.getAnswer().equals(request.getAnswer())){
+        if(!qnA.getQuestion().equals(request.getQuestion())){
             throw new ResourceInconsistencyException("질문 또는 답안이 일치하지 않습니다.");
         }
 
@@ -165,5 +166,24 @@ public class QnaService {
                 .qnaId(qnA.getId())
                 .feedback(qnA.getFeedback())
                 .build();
+    }
+
+    @Transactional
+    public void deleteQna(HttpServletRequest httpServletRequest, Long id) {
+        QnA qnA = qnaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
+
+        if(qnA.isDeleted()){
+            throw new ResourceNotFoundException("삭제된 질의응답입니다.");
+        }
+
+        String email = extractUserEmail(httpServletRequest);
+
+        if(!Objects.equals(qnA.getUser().getEmail(), email)){
+            throw new NotAcceptableUserException("다른 유저의 Qna는 삭제할 수 없습니다.");
+        }
+
+        qnA.delete();
+        qnaRepository.save(qnA);
     }
 }

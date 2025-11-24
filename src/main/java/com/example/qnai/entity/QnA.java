@@ -20,15 +20,20 @@ public class QnA {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(columnDefinition = "TEXT")
     private String question;
 
+    @Column(columnDefinition = "TEXT")
     private String answer;
 
+    @Column(columnDefinition = "TEXT")
     private String feedback;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, name = "q_subject")
     private Subject subject;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, name = "q_level")
     private Level level;
 
@@ -39,6 +44,10 @@ public class QnA {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private Users user;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean isDeleted = false;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -55,5 +64,9 @@ public class QnA {
     @PreUpdate
     public void preUpdate(){
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public void delete() {
+        this.isDeleted = true;
     }
 }

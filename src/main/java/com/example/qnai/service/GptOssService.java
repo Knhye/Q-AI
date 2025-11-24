@@ -68,11 +68,9 @@ public class GptOssService {
             throw new AiNoResponseException("OpenAI 응답이 올바르지 않습니다.");
         }
 
-        String content = openaiResponse.getChoices().getFirst().getMessage().getContent();
-
         // 응답 DTO 구성
 
-        return content;
+        return openaiResponse.getChoices().getFirst().getMessage().getContent();
 
     }
 
@@ -127,10 +125,8 @@ public class GptOssService {
             throw new AiNoResponseException("OpenAI 응답이 올바르지 않습니다.");
         }
 
-        String feedback = openaiResponse.getChoices().getFirst().getMessage().getContent();
-
         // 응답 DTO 구성
 
-        return feedback;
+        return openaiResponse.getChoices().getFirst().getMessage().getContent();
     }
 }
