@@ -5,6 +5,8 @@ import com.example.qnai.dto.notebook.request.NotebookAddItemRequest;
 import com.example.qnai.dto.notebook.request.NotebookCreateRequest;
 import com.example.qnai.dto.notebook.request.NotebookExcludeItemRequest;
 import com.example.qnai.dto.notebook.response.NotebookCreateResponse;
+import com.example.qnai.dto.notebook.response.NotebookListResponse;
+import com.example.qnai.dto.qna.response.QuestionTitlesResponse;
 import com.example.qnai.entity.Notebook;
 import com.example.qnai.entity.QnA;
 import com.example.qnai.entity.Users;
@@ -21,6 +23,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Objects;
 
 @Service
@@ -31,6 +34,7 @@ public class NotebookService {
     private final UserRepository userRepository;
     private final QnaRepository qnaRepository;
 
+    //이메일 추출
     private String extractUserEmail(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
 
@@ -53,6 +57,7 @@ public class NotebookService {
         return email;
     }
 
+    //노트북 생성
     @Transactional
     public NotebookCreateResponse createNotebook(HttpServletRequest httpServletRequest, NotebookCreateRequest request) {
         String email = extractUserEmail(httpServletRequest);
@@ -74,6 +79,7 @@ public class NotebookService {
                 .build();
     }
 
+    //노트북에 질의응답 추가
     @Transactional
     public void addItemToNotebook(HttpServletRequest httpServletRequest, NotebookAddItemRequest request) {
         Notebook notebook = notebookRepository.findById(request.getNotebookId())
@@ -99,6 +105,7 @@ public class NotebookService {
         qnA.setNotebook(notebook);
     }
 
+    //노트북 삭제
     @Transactional
     public void deleteNotebook(HttpServletRequest httpServletRequest, Long id) {
         Notebook notebook = notebookRepository.findById(id)
@@ -117,6 +124,7 @@ public class NotebookService {
         notebook.delete();
     }
 
+    //노트북에서 질의응답 제외
     @Transactional
     public void excludeItemFromNotebook(HttpServletRequest httpServletRequest, NotebookExcludeItemRequest request) {
         Notebook notebook = notebookRepository.findById(request.getNotebookId())
@@ -138,5 +146,22 @@ public class NotebookService {
         notebook.getQnAs().remove(qnA);
 
         qnA.setNotebook(null);
+    }
+
+    //노트북 리스트 조회
+    @Transactional(readOnly = true)
+    public List<NotebookListResponse> getNotebookList(HttpServletRequest request) {
+        List<Notebook> notebookList = notebookRepository.findAllByUserEmail(
+                extractUserEmail(request)
+        );
+
+        return notebookList.stream()
+                .filter(notebook -> !notebook.isDeleted())
+                .map(notebook -> NotebookListResponse.builder()
+                        .notebookId(notebook.getId())
+                        .name(notebook.getName())
+                        .build()
+                )
+                .toList();
     }
 }

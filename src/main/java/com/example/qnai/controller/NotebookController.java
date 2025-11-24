@@ -5,6 +5,7 @@ import com.example.qnai.dto.notebook.request.NotebookAddItemRequest;
 import com.example.qnai.dto.notebook.request.NotebookCreateRequest;
 import com.example.qnai.dto.notebook.request.NotebookExcludeItemRequest;
 import com.example.qnai.dto.notebook.response.NotebookCreateResponse;
+import com.example.qnai.dto.notebook.response.NotebookListResponse;
 import com.example.qnai.service.NotebookService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -12,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -41,5 +44,11 @@ public class NotebookController {
     public ResponseEntity<ApiResponse<Void>> excludeItemFromNotebook(HttpServletRequest httpServletRequest, @Valid @RequestBody NotebookExcludeItemRequest request){
         notebookService.excludeItemFromNotebook(httpServletRequest, request);
         return ApiResponse.ok("노트북에서 질의응답을 제외하였습니다.");
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<NotebookListResponse>>> getNotebookList(HttpServletRequest request){
+        List<NotebookListResponse> response = notebookService.getNotebookList(request);
+        return ApiResponse.ok(response, "노트북 리스트를 조회하였습니다.");
     }
 }
