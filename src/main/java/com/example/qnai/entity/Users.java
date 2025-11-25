@@ -52,6 +52,12 @@ public class Users {
     @Builder.Default
     private boolean isDeleted = false;
 
+    @OneToOne(mappedBy = "user",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY)
+    private UserNotificationSetting notificationSetting;
+
     @PrePersist
     public void prePersist(){
         this.createdAt = LocalDateTime.now();

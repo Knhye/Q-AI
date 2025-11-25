@@ -195,6 +195,7 @@ public class NotebookService {
         List<Item> items = qnAList.stream()
                 .filter(qna -> !qna.isDeleted())
                 .map(qna -> Item.builder()
+                        .qnaId(qna.getId())
                         .question(qna.getQuestion())
                         .answer(qna.getAnswer())
                         .feedback(qna.getFeedback())
