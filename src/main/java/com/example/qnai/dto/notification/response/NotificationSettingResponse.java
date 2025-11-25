@@ -10,7 +10,6 @@ import java.time.LocalTime;
 @AllArgsConstructor
 @Builder
 public class NotificationSettingResponse {
-    private Long userId;
     private boolean isEnabled;
     private LocalTime preferredTime;
 }

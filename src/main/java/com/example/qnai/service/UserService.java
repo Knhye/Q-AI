@@ -8,12 +8,11 @@ import com.example.qnai.dto.user.response.UpdateUserPasswordResponse;
 import com.example.qnai.dto.user.response.UserDetailResponse;
 import com.example.qnai.dto.user.response.UserUpdateResponse;
 import com.example.qnai.entity.RefreshToken;
+import com.example.qnai.entity.UserNotificationSetting;
 import com.example.qnai.entity.Users;
-import com.example.qnai.global.exception.InvalidTokenException;
-import com.example.qnai.global.exception.NotAcceptableUserException;
-import com.example.qnai.global.exception.NotLoggedInException;
-import com.example.qnai.global.exception.UserAlreadyLoggedOutException;
+import com.example.qnai.global.exception.*;
 import com.example.qnai.repository.RefreshTokenRepository;
+import com.example.qnai.repository.UserNotificationSettingRepository;
 import com.example.qnai.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +41,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final TokenProvider tokenProvider;
     private final RedisTemplate<String, String> redisTemplate;
+    private final UserNotificationSettingRepository userNotificationSettingRepository;
 
     @Transactional(readOnly = true)
     public UserDetailResponse getUserDetail(Long id) {
@@ -135,6 +135,11 @@ public class UserService {
             redisTemplate.delete(refreshTokenKey);
 
         }
+
+        UserNotificationSetting userNotificationSetting = userNotificationSettingRepository.findByUserEmail(username)
+                .orElseThrow(() -> new ResourceNotFoundException("푸시 알림을 설정할 수 없습니다."));
+
+        userNotificationSetting.unsubscribe();
     }
 
     private String extractAccessToken(HttpServletRequest request) {

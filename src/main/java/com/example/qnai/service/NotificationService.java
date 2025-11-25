@@ -68,7 +68,6 @@ public class NotificationService {
         userNotificationSettingRepository.save(existingNotificationSetting);
 
         return NotificationSettingResponse.builder()
-                .userId(user.getId())
                 .isEnabled(existingNotificationSetting.isEnabled())
                 .preferredTime(existingNotificationSetting.getPreferredTime())
                 .build();

@@ -8,10 +8,12 @@ import com.example.qnai.dto.user.request.SignupRequest;
 import com.example.qnai.dto.user.response.LoginResponse;
 import com.example.qnai.dto.user.response.SignupResponse;
 import com.example.qnai.entity.RefreshToken;
+import com.example.qnai.entity.UserNotificationSetting;
 import com.example.qnai.entity.Users;
 import com.example.qnai.global.exception.InvalidTokenException;
 import com.example.qnai.global.exception.UserAlreadyExistException;
 import com.example.qnai.repository.RefreshTokenRepository;
+import com.example.qnai.repository.UserNotificationSettingRepository;
 import com.example.qnai.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -32,6 +34,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final TokenProvider tokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final UserNotificationSettingRepository userNotificationSettingRepository;
 
 
     public SignupResponse signup(SignupRequest request){
@@ -46,6 +49,12 @@ public class AuthService {
                 .build();
 
         userRepository.save(user);
+
+        UserNotificationSetting notificationSetting = UserNotificationSetting.builder()
+                .user(user)
+                .build();
+
+        userNotificationSettingRepository.save(notificationSetting);
 
         return SignupResponse.builder()
                 .userId(user.getId())
