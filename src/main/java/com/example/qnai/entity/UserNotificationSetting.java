@@ -41,4 +41,13 @@ public class UserNotificationSetting {
     public void updatePreferredTime(LocalTime preferredTime) {
         this.preferredTime = preferredTime;
     }
+
+    public void unsubscribe() {
+        this.isEnabled = false;
+    }
+
+    public void subscribe(LocalTime preferredTime) {
+        this.preferredTime = preferredTime;
+        this.isEnabled = true;
+    }
 }

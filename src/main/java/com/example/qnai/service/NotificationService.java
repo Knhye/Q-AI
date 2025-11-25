@@ -1,11 +1,13 @@
 package com.example.qnai.service;
 
 import com.example.qnai.config.TokenProvider;
-import com.example.qnai.dto.notification.request.SubscribeRequest;
+import com.example.qnai.dto.notification.request.NotificationSettingRequest;
+import com.example.qnai.dto.notification.response.NotificationSettingResponse;
 import com.example.qnai.entity.UserNotificationSetting;
 import com.example.qnai.entity.Users;
 import com.example.qnai.global.exception.InvalidTokenException;
 import com.example.qnai.global.exception.NotLoggedInException;
+import com.example.qnai.global.exception.ResourceNotFoundException;
 import com.example.qnai.repository.NotificationRepository;
 import com.example.qnai.repository.UserNotificationSettingRepository;
 import com.example.qnai.repository.UserRepository;
@@ -47,22 +49,28 @@ public class NotificationService {
     }
 
     @Transactional
-    public void subscribe(HttpServletRequest httpServletRequest, SubscribeRequest request) {
+    public NotificationSettingResponse notificationSetting(HttpServletRequest httpServletRequest, NotificationSettingRequest request) {
         String email = extractUserEmail(httpServletRequest);
 
         Users user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("해당 유저가 존재하지 않습니다."));
 
-        UserNotificationSetting notificationSetting = UserNotificationSetting.builder()
-                .user(user)
-                .isEnabled(true)
-                .build();
+        UserNotificationSetting existingNotificationSetting = userNotificationSettingRepository.findByUser(user)
+                .orElseThrow(() -> new ResourceNotFoundException("해당 알림 설정이 존재하지 않습니다."));
 
-        // request에 preferredTime이 존재한다면 설정, 아니라면 default : 오전 12시
-        if(request.getPreferredTime() != null){
-            notificationSetting.updatePreferredTime(request.getPreferredTime());
+        //유저의 UserNotificationSetting이 무조건 존재한다는 가정 하에
+        if(existingNotificationSetting.isEnabled()){
+            existingNotificationSetting.unsubscribe();
+        } else{
+            existingNotificationSetting.subscribe(request.getPreferredTime());
         }
 
-        userNotificationSettingRepository.save(notificationSetting);
+        userNotificationSettingRepository.save(existingNotificationSetting);
+
+        return NotificationSettingResponse.builder()
+                .userId(user.getId())
+                .isEnabled(existingNotificationSetting.isEnabled())
+                .preferredTime(existingNotificationSetting.getPreferredTime())
+                .build();
     }
 }
