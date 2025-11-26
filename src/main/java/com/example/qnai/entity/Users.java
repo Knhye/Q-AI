@@ -85,4 +85,8 @@ public class Users {
     public void delete() {
         this.isDeleted = true;
     }
+
+    public void updateFcmToken(String fcmToken) {
+        this.fcmToken = fcmToken;
+    }
 }

@@ -2,6 +2,7 @@ package com.example.qnai.service;
 
 import com.example.qnai.config.TokenProvider;
 import com.example.qnai.dto.user.request.LogoutRequest;
+import com.example.qnai.dto.user.request.UserFcmTokenUpdateRequest;
 import com.example.qnai.dto.user.request.UserPasswordUpdateRequest;
 import com.example.qnai.dto.user.request.UserUpdateRequest;
 import com.example.qnai.dto.user.response.UpdateUserPasswordResponse;
@@ -42,6 +43,29 @@ public class UserService {
     private final TokenProvider tokenProvider;
     private final RedisTemplate<String, String> redisTemplate;
     private final UserNotificationSettingRepository userNotificationSettingRepository;
+
+    //이메일 추출
+    private String extractUserEmail(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+
+        if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
+            throw new NotLoggedInException("로그인이 필요한 요청입니다.");
+        }
+
+        String accessToken = bearerToken.substring(7); // "Bearer " 제거
+
+        if (!tokenProvider.validateToken(accessToken)) {
+            throw new InvalidTokenException("유효하지 않은 Access Token입니다.");
+        }
+
+        String email = tokenProvider.extractUsername(accessToken);
+
+        if(email.isEmpty()){
+            throw new UsernameNotFoundException("이메일을 추출할 수 없습니다.");
+        }
+
+        return email;
+    }
 
     @Transactional(readOnly = true)
     public UserDetailResponse getUserDetail(Long id) {
@@ -172,5 +196,15 @@ public class UserService {
 
         user.delete();
         userRepository.save(user);
+    }
+
+    @Transactional
+    public void updateUserFcmToken(HttpServletRequest httpServletRequest, UserFcmTokenUpdateRequest request) {
+        String email = extractUserEmail(httpServletRequest);
+
+        Users user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("해당 유저가 존재하지 않습니다."));
+
+        user.updateFcmToken(request.getFcmToken());
     }
 }

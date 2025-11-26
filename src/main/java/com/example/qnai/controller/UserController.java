@@ -2,6 +2,7 @@ package com.example.qnai.controller;
 
 import com.example.qnai.common.ApiResponse;
 import com.example.qnai.dto.user.request.LogoutRequest;
+import com.example.qnai.dto.user.request.UserFcmTokenUpdateRequest;
 import com.example.qnai.dto.user.request.UserPasswordUpdateRequest;
 import com.example.qnai.dto.user.request.UserUpdateRequest;
 import com.example.qnai.dto.user.response.UpdateUserPasswordResponse;
@@ -47,5 +48,11 @@ public class UserController {
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id){
         userService.deleteUser(id);
         return ApiResponse.ok("회원 정보를 성공적으로 삭제하였습니다.");
+    }
+
+    @PatchMapping("/fcm")
+    public ResponseEntity<ApiResponse<Void>> updateUserFcmToken(HttpServletRequest httpServletRequest, @Valid @RequestBody UserFcmTokenUpdateRequest request){
+        userService.updateUserFcmToken(httpServletRequest, request);
+        return ApiResponse.ok("회원 FCM을 성공적으로 업데이트 하였습니다.");
     }
 }
