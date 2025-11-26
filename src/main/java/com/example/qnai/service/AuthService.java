@@ -70,8 +70,12 @@ public class AuthService {
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
 
+        System.out.println(1);
+
         Users user = userRepository.findByEmailAndIsDeletedFalse(request.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException("유저가 존재하지 않습니다."));
+                .orElseThrow(() -> new UsernameNotFoundException("User doesn't exist"));
+
+        System.out.println(2);
 
 //        // 기존 RefreshToken이 존재하면 삭제
 //        refreshTokenRepository.findByUser(user)
@@ -82,7 +86,9 @@ public class AuthService {
 
         // 새 토큰 생성
         String accessToken = tokenProvider.createAccessToken(request.getEmail());
+        System.out.println(3);
         String refreshToken = tokenProvider.createRefreshToken(request.getEmail());
+        System.out.println(4);
 
         // 새로운 RefreshToken 저장
         RefreshToken refreshTokenEntity = refreshTokenRepository.findByUser(user)
@@ -92,8 +98,10 @@ public class AuthService {
                         .expiryDatetime(LocalDateTime.now().plusDays(7))
                         .user(user)
                         .build());
+        System.out.println(5);
 
         refreshTokenRepository.save(refreshTokenEntity);
+        System.out.println(6);
 
         return LoginResponse.builder()
                 .accessToken(accessToken)

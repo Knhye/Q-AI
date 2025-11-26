@@ -30,9 +30,9 @@ public class NotificationController {
         return ApiResponse.ok("알림 읽음 처리가 완료되었습니다.");
     }
 
-//    @GetMapping
-//    public ResponseEntity<ApiResponse<NotificationResponse>> getNotifications(HttpServletRequest httpServletRequest){
-//        NotificationResponse response = notificationService.getNotifications(httpServletRequest);
-//        return ApiResponse.ok(response, "알림 목록을 성공적으로 조회하였습니다.");
-//    }
+    @GetMapping
+    public ResponseEntity<ApiResponse<NotificationResponse>> getNotifications(HttpServletRequest httpServletRequest){
+        NotificationResponse response = notificationService.getNotifications(httpServletRequest);
+        return ApiResponse.ok(response, "알림 목록을 성공적으로 조회하였습니다.");
+    }
 }

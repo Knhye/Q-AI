@@ -6,4 +6,8 @@ import lombok.Data;
 @Data
 @Builder
 public class NotificationItem {
+    private Long notificationId;
+    private String title;
+    private String content;
+    private boolean isRead;
 }

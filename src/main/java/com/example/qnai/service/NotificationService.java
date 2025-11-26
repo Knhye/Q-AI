@@ -3,6 +3,7 @@ package com.example.qnai.service;
 import com.example.qnai.config.TokenProvider;
 import com.example.qnai.dto.notification.request.NotificationReadRequest;
 import com.example.qnai.dto.notification.request.NotificationSettingRequest;
+import com.example.qnai.dto.notification.response.NotificationItem;
 import com.example.qnai.dto.notification.response.NotificationResponse;
 import com.example.qnai.dto.notification.response.NotificationSettingResponse;
 import com.example.qnai.entity.Notification;
@@ -152,8 +153,28 @@ public class NotificationService {
         }
     }
 
-//    @Transactional(readOnly = true)
-//    public NotificationResponse getNotifications(HttpServletRequest httpServletRequest) {
-//
-//    }
+    @Transactional(readOnly = true)
+    public NotificationResponse getNotifications(HttpServletRequest httpServletRequest) {
+        String email = extractUserEmail(httpServletRequest);
+
+        Users user = userRepository.findByEmailAndIsDeletedFalse(email)
+                .orElseThrow(() -> new UsernameNotFoundException("해당 유저가 존재하지 않습니다."));
+
+        List<Notification> notifications = notificationRepository.findAllByUser(user);
+
+        List<NotificationItem> items = notifications.stream()
+                .map(item ->
+                    NotificationItem.builder()
+                            .notificationId(item.getId())
+                            .title(item.getTitle())
+                            .content(item.getContent())
+                            .isRead(item.isRead())
+                            .build()
+                ).toList();
+
+        return NotificationResponse.builder()
+                .items(items)
+                .unreadCount(notifications.size())
+                .build();
+    }
 }
