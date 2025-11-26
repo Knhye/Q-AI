@@ -48,11 +48,13 @@ public class AuthService {
                 .email(request.getEmail())
                 .build();
 
-        userRepository.save(user);
-
         UserNotificationSetting notificationSetting = UserNotificationSetting.builder()
                 .user(user)
                 .build();
+
+        user.setNotificationSetting(notificationSetting);
+
+        userRepository.save(user);
 
         userNotificationSettingRepository.save(notificationSetting);
 

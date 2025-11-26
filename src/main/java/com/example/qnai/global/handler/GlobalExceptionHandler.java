@@ -2,6 +2,7 @@ package com.example.qnai.global.handler;
 
 import com.example.qnai.common.ApiResponse;
 import com.example.qnai.global.exception.*;
+import com.google.protobuf.Api;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -64,6 +65,18 @@ public class GlobalExceptionHandler {
         return ApiResponse.fail(e.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(CannotSendNotificationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleCannotSendNotificationException(CannotSendNotificationException e){
+        System.out.println(e.getMessage());
+        return ApiResponse.fail(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidTokenException(InvalidTokenException e){
+        System.out.println(e.getMessage());
+        return ApiResponse.fail(e.getMessage(), HttpStatus.UNAUTHORIZED);
+    }
+
     //요청 값이 올바르지 않을 때
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<String>> handleValidationExceptions(MethodArgumentNotValidException e) {
@@ -75,11 +88,5 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleException(Exception e){
         System.out.println(e.getMessage());
         return ApiResponse.fail("서버 오류가 발생하였습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    @ExceptionHandler(InvalidTokenException.class)
-    public ResponseEntity<ApiResponse<Void>> handleInvalidTokenException(InvalidTokenException e){
-        System.out.println(e.getMessage());
-        return ApiResponse.fail(e.getMessage(), HttpStatus.UNAUTHORIZED);
     }
 }

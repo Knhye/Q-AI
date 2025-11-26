@@ -58,6 +58,9 @@ public class Users {
             fetch = FetchType.LAZY)
     private UserNotificationSetting notificationSetting;
 
+    @Column(name = "fcm_token")
+    private String fcmToken;
+
     @PrePersist
     public void prePersist(){
         this.createdAt = LocalDateTime.now();
