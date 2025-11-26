@@ -8,10 +8,10 @@ import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Getter
-@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -84,9 +84,17 @@ public class Users {
 
     public void delete() {
         this.isDeleted = true;
+        this.fcmToken = null;
+        this.notificationSetting.unsubscribe();
     }
 
     public void updateFcmToken(String fcmToken) {
-        this.fcmToken = fcmToken;
+        if (!Objects.equals(this.fcmToken, fcmToken)) {
+            this.fcmToken = fcmToken;
+        }
+    }
+
+    public void setNotification(UserNotificationSetting notificationSetting) {
+        this.notificationSetting = notificationSetting;
     }
 }

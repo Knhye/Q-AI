@@ -7,7 +7,6 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@AllArgsConstructor
 @Builder
 public class UserUpdateResponse {
     private Long userId;

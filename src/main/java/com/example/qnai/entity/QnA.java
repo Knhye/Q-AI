@@ -10,7 +10,6 @@ import java.util.List;
 
 @Entity
 @Getter
-@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -68,5 +67,21 @@ public class QnA {
 
     public void delete() {
         this.isDeleted = true;
+    }
+
+    public void addNotebook(Notebook notebook) {
+        this.notebook = notebook;
+    }
+
+    public void removeNotebook() {
+        this.notebook = null;
+    }
+
+    public void updateAnswer(String answer) {
+        this.answer = answer;
+    }
+
+    public void updateFeedback(String feedback) {
+        this.feedback = feedback;
     }
 }

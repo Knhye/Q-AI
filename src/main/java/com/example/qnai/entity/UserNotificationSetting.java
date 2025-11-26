@@ -10,7 +10,6 @@ import java.time.LocalTime;
 
 @Entity
 @Getter
-@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -49,5 +48,9 @@ public class UserNotificationSetting {
     public void subscribe(LocalTime preferredTime) {
         this.preferredTime = preferredTime;
         this.isEnabled = true;
+    }
+
+    public void updateLastSentDate(LocalDate today) {
+        this.lastSentDate = today;
     }
 }

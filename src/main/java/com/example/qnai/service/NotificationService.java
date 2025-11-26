@@ -1,7 +1,9 @@
 package com.example.qnai.service;
 
 import com.example.qnai.config.TokenProvider;
+import com.example.qnai.dto.notification.request.NotificationReadRequest;
 import com.example.qnai.dto.notification.request.NotificationSettingRequest;
+import com.example.qnai.dto.notification.response.NotificationResponse;
 import com.example.qnai.dto.notification.response.NotificationSettingResponse;
 import com.example.qnai.entity.Notification;
 import com.example.qnai.entity.UserNotificationSetting;
@@ -20,7 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -59,7 +63,7 @@ public class NotificationService {
     public NotificationSettingResponse notificationSetting(HttpServletRequest httpServletRequest, NotificationSettingRequest request) {
         String email = extractUserEmail(httpServletRequest);
 
-        Users user = userRepository.findByEmail(email)
+        Users user = userRepository.findByEmailAndIsDeletedFalse(email)
                 .orElseThrow(() -> new UsernameNotFoundException("해당 유저가 존재하지 않습니다."));
 
         UserNotificationSetting existingNotificationSetting = userNotificationSettingRepository.findByUser(user)
@@ -98,7 +102,7 @@ public class NotificationService {
             sendPushNotification(user, notification);
 
             // 3. 마지막 전송 날짜 업데이트
-            setting.setLastSentDate(today);
+            setting.updateLastSentDate(today);
             userNotificationSettingRepository.save(setting); // 변경된 엔티티 저장
         }
     }
@@ -128,4 +132,28 @@ public class NotificationService {
                 notification.getContent()
         );
     }
+
+    //알림 읽음 처리
+    @Transactional
+    public void readNotifications(HttpServletRequest httpServletRequest, NotificationReadRequest requests) {
+        String email = extractUserEmail(httpServletRequest);
+
+        Users user = userRepository.findByEmailAndIsDeletedFalse(email)
+                .orElseThrow(() -> new UsernameNotFoundException("해당 유저는 존재하지 않습니다."));
+
+        Set<Long> notificationIds = new HashSet<>(requests.getNotificationId());
+
+        List<Notification> notificationsToUpdate = notificationRepository.findAllByIdIn(notificationIds);
+
+        for(Notification notification : notificationsToUpdate){
+            if (!notification.isRead() && notification.getUser().equals(user) && !notification.getUser().isDeleted()) {
+                notification.markAsRead();
+            }
+        }
+    }
+
+//    @Transactional(readOnly = true)
+//    public NotificationResponse getNotifications(HttpServletRequest httpServletRequest) {
+//
+//    }
 }

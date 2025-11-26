@@ -7,7 +7,6 @@ import lombok.Data;
 import java.time.LocalTime;
 
 @Data
-@AllArgsConstructor
 @Builder
 public class NotificationSettingResponse {
     private boolean isEnabled;

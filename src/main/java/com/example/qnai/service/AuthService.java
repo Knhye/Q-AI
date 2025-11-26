@@ -38,7 +38,7 @@ public class AuthService {
 
 
     public SignupResponse signup(SignupRequest request){
-        if(userRepository.existsByEmail(request.getEmail())){
+        if(userRepository.existsByEmailAndIsDeletedFalse(request.getEmail())){
             throw new UserAlreadyExistException("이미 가입된 이메일입니다.");
         }
 
@@ -52,7 +52,7 @@ public class AuthService {
                 .user(user)
                 .build();
 
-        user.setNotificationSetting(notificationSetting);
+        user.setNotification(notificationSetting);
 
         userRepository.save(user);
 
@@ -70,7 +70,7 @@ public class AuthService {
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
 
-        Users user = userRepository.findByEmail(request.getEmail())
+        Users user = userRepository.findByEmailAndIsDeletedFalse(request.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("유저가 존재하지 않습니다."));
 
 //        // 기존 RefreshToken이 존재하면 삭제

@@ -5,9 +5,10 @@ import com.example.qnai.entity.QnA;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface QnaRepository extends JpaRepository<QnA, Long> {
-    List<QnA> findAllByUserEmail(String userEmail);
+    Optional<QnA> findByIdAndIsDeletedFalse(Long id);
 
     List<QnA> findAllByNotebook(Notebook notebook);
 

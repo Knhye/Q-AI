@@ -12,11 +12,9 @@ import com.example.qnai.repository.QnaRepository;
 import com.example.qnai.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.BadRequestException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -58,7 +56,7 @@ public class QnaService {
     public QnaGenerateResponse generateQuestion(HttpServletRequest httpServletRequest, QnaGenerateRequest request) {
         String email = extractUserEmail(httpServletRequest);
 
-        Users user = userRepository.findByEmail(email)
+        Users user = userRepository.findByEmailAndIsDeletedFalse(email)
                 .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 유저입니다."));
 
         String question = gptOssService.generateQuestion(request);
@@ -90,14 +88,11 @@ public class QnaService {
     //질의응답 조회
     @Transactional(readOnly = true)
     public QnaDetailResponse getQnaById(HttpServletRequest httpServletRequest, Long id) {
-        QnA qnA = qnaRepository.findById(id)
+        QnA qnA = qnaRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
 
-        if(qnA.isDeleted()){
-            throw new ResourceNotFoundException("삭제된 질의응답입니다.");
-        }
-
         String email = extractUserEmail(httpServletRequest);
+
         if(!email.equals(qnA.getUser().getEmail())){
             throw new NotAcceptableUserException("다른 유저의 질의응답은 조회할 수 없습니다.");
         }
@@ -136,12 +131,8 @@ public class QnaService {
     //응답 수정
     @Transactional
     public AnswerUpdateResponse updateAnswer(HttpServletRequest httpServletRequest, Long id, AnswerUpdateRequest request) {
-        QnA qnA = qnaRepository.findById(id)
+        QnA qnA = qnaRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
-
-        if(qnA.isDeleted()){
-            throw new ResourceNotFoundException("삭제된 질의응답입니다.");
-        }
 
         String email = extractUserEmail(httpServletRequest);
 
@@ -149,7 +140,7 @@ public class QnaService {
             throw new NotAcceptableUserException("다른 유저의 질의응답은 수정할 수 없습니다.");
         }
 
-        qnA.setAnswer(request.getAnswer());
+        qnA.updateAnswer(request.getAnswer());
         qnaRepository.save(qnA);
 
         return AnswerUpdateResponse.builder()
@@ -162,12 +153,8 @@ public class QnaService {
     //피드백 생성
     @Transactional
     public FeedbackGenerateResponse generateFeedback(HttpServletRequest httpServletRequest, FeedbackGenerateRequest request) {
-        QnA qnA = qnaRepository.findById(request.getQnaId())
+        QnA qnA = qnaRepository.findByIdAndIsDeletedFalse(request.getQnaId())
                 .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
-
-        if(qnA.isDeleted()){
-            throw new ResourceNotFoundException("삭제된 질의응답입니다.");
-        }
 
         String email = extractUserEmail(httpServletRequest);
 
@@ -181,7 +168,7 @@ public class QnaService {
 
         String feedback = gptOssService.generateFeedback(request.getQuestion(), request.getAnswer());
 
-        qnA.setFeedback(feedback);
+        qnA.updateFeedback(feedback);
         qnaRepository.save(qnA);
 
         return FeedbackGenerateResponse.builder()
@@ -194,12 +181,8 @@ public class QnaService {
     //질의응답 삭제
     @Transactional
     public void deleteQna(HttpServletRequest httpServletRequest, Long id) {
-        QnA qnA = qnaRepository.findById(id)
+        QnA qnA = qnaRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
-
-        if(qnA.isDeleted()){
-            throw new ResourceNotFoundException("삭제된 질의응답입니다.");
-        }
 
         String email = extractUserEmail(httpServletRequest);
 

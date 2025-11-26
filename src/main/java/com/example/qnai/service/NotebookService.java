@@ -8,14 +8,10 @@ import com.example.qnai.dto.notebook.response.Item;
 import com.example.qnai.dto.notebook.response.NotebookCreateResponse;
 import com.example.qnai.dto.notebook.response.NotebookDetailResponse;
 import com.example.qnai.dto.notebook.response.NotebookListResponse;
-import com.example.qnai.dto.qna.response.QuestionTitlesResponse;
 import com.example.qnai.entity.Notebook;
 import com.example.qnai.entity.QnA;
 import com.example.qnai.entity.Users;
-import com.example.qnai.global.exception.InvalidTokenException;
-import com.example.qnai.global.exception.NotAcceptableUserException;
-import com.example.qnai.global.exception.NotLoggedInException;
-import com.example.qnai.global.exception.ResourceNotFoundException;
+import com.example.qnai.global.exception.*;
 import com.example.qnai.repository.NotebookRepository;
 import com.example.qnai.repository.QnaRepository;
 import com.example.qnai.repository.UserRepository;
@@ -64,7 +60,7 @@ public class NotebookService {
     public NotebookCreateResponse createNotebook(HttpServletRequest httpServletRequest, NotebookCreateRequest request) {
         String email = extractUserEmail(httpServletRequest);
 
-        Users user = userRepository.findByEmail(email)
+        Users user = userRepository.findByEmailAndIsDeletedFalse(email)
                 .orElseThrow(() -> new UsernameNotFoundException("유저가 존재하지 않습니다."));
 
         Notebook notebook = Notebook.builder()
@@ -84,14 +80,10 @@ public class NotebookService {
     //노트북에 질의응답 추가
     @Transactional
     public void addItemToNotebook(HttpServletRequest httpServletRequest, NotebookAddItemRequest request) {
-        Notebook notebook = notebookRepository.findById(request.getNotebookId())
+        Notebook notebook = notebookRepository.findByIdAndIsDeletedFalse(request.getNotebookId())
                 .orElseThrow(() -> new ResourceNotFoundException("해당 노트북이 존재하지 않습니다."));
 
-        if(notebook.isDeleted()){
-            throw new ResourceNotFoundException("삭제된 노트북입니다.");
-        }
-
-        QnA qnA = qnaRepository.findById(request.getQnaId())
+        QnA qnA = qnaRepository.findByIdAndIsDeletedFalse(request.getQnaId())
                 .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
 
         String email = extractUserEmail(httpServletRequest);
@@ -100,22 +92,22 @@ public class NotebookService {
             throw new NotAcceptableUserException("다른 유저의 노트북 또는 질의응답에 접근할 수 없습니다.");
         }
 
+        if(qnA.getNotebook() != null){
+            throw new DuplicateResourceException("질의응답은 하나의 노트북에서만 설정할 수 있습니다.");
+        }
+
         //노트북 qna 리스트에 추가
         notebook.getQnAs().add(qnA);
 
         //qna 노트북 설정
-        qnA.setNotebook(notebook);
+        qnA.addNotebook(notebook);
     }
 
     //노트북 삭제
     @Transactional
     public void deleteNotebook(HttpServletRequest httpServletRequest, Long id) {
-        Notebook notebook = notebookRepository.findById(id)
+        Notebook notebook = notebookRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("해당 노트북이 존재하지 않습니다."));
-
-        if(notebook.isDeleted()){
-            throw new ResourceNotFoundException("삭제된 노트북입니다.");
-        }
 
         String email = extractUserEmail(httpServletRequest);
 
@@ -129,19 +121,11 @@ public class NotebookService {
     //노트북에서 질의응답 제외
     @Transactional
     public void excludeItemFromNotebook(HttpServletRequest httpServletRequest, NotebookExcludeItemRequest request) {
-        Notebook notebook = notebookRepository.findById(request.getNotebookId())
+        Notebook notebook = notebookRepository.findByIdAndIsDeletedFalse(request.getNotebookId())
                 .orElseThrow(() -> new ResourceNotFoundException("해당 노트북이 존재하지 않습니다."));
 
-        if(notebook.isDeleted()){
-            throw new ResourceNotFoundException("삭제된 노트북입니다.");
-        }
-
-        QnA qnA = qnaRepository.findById(request.getQnaId())
+        QnA qnA = qnaRepository.findByIdAndIsDeletedFalse(request.getQnaId())
                 .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
-
-        if(qnA.isDeleted()){
-            throw new ResourceNotFoundException("삭제된 질의응답입니다.");
-        }
 
         String email = extractUserEmail(httpServletRequest);
 
@@ -155,13 +139,13 @@ public class NotebookService {
 
         notebook.getQnAs().remove(qnA);
 
-        qnA.setNotebook(null);
+        qnA.removeNotebook();
     }
 
     //노트북 리스트 조회
     @Transactional(readOnly = true)
     public List<NotebookListResponse> getNotebookList(HttpServletRequest httpServletRequest) {
-        List<Notebook> notebookList = notebookRepository.findAllByUserEmail(
+        List<Notebook> notebookList = notebookRepository.findAllByUserEmailAndIsDeletedFalse(
                 extractUserEmail(httpServletRequest)
         );
 
@@ -177,12 +161,8 @@ public class NotebookService {
 
     @Transactional(readOnly = true)
     public NotebookDetailResponse getNotebookDetail(HttpServletRequest httpServletRequest, Long id) {
-        Notebook notebook = notebookRepository.findById(id)
+        Notebook notebook = notebookRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("해당 노트북을 찾을 수 없습니다."));
-
-        if(notebook.isDeleted()){
-            throw new ResourceNotFoundException("삭제된 노트북입니다.");
-        }
 
         String email = extractUserEmail(httpServletRequest);
 
