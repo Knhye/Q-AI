@@ -15,6 +15,7 @@ import com.example.qnai.global.exception.*;
 import com.example.qnai.repository.NotebookRepository;
 import com.example.qnai.repository.QnaRepository;
 import com.example.qnai.repository.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

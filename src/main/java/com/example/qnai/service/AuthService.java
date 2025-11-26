@@ -15,6 +15,7 @@ import com.example.qnai.global.exception.UserAlreadyExistException;
 import com.example.qnai.repository.RefreshTokenRepository;
 import com.example.qnai.repository.UserNotificationSettingRepository;
 import com.example.qnai.repository.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -108,6 +109,7 @@ public class AuthService {
                 .refreshToken(refreshToken)
                 .build();
     }
+
 
 
     public RefreshResponse refresh(RefreshRequest requestDto){
