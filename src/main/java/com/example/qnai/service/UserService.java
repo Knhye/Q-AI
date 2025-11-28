@@ -11,6 +11,8 @@ import com.example.qnai.dto.user.response.UserUpdateResponse;
 import com.example.qnai.entity.UserNotificationSetting;
 import com.example.qnai.entity.Users;
 import com.example.qnai.global.exception.*;
+import com.example.qnai.repository.BlacklistRepository;
+import com.example.qnai.repository.RefreshTokenRepository;
 import com.example.qnai.repository.UserNotificationSettingRepository;
 import com.example.qnai.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,8 +36,9 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenProvider tokenProvider;
-    private final RedisTemplate<String, String> redisTemplate;
     private final UserNotificationSettingRepository userNotificationSettingRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final BlacklistRepository blacklistRepository;
 
     //이메일 추출
     private String extractUserEmail(HttpServletRequest request) {
@@ -118,8 +121,8 @@ public class UserService {
 
     @Transactional
     public void logout(HttpServletRequest httpServletRequest, LogoutRequest request) {
+        // 1. Access Token 추출 및 검증
         String accessToken = extractAccessToken(httpServletRequest);
-
         if (accessToken == null) {
             throw new NotLoggedInException("로그인이 필요한 요청입니다.");
         }
@@ -128,33 +131,22 @@ public class UserService {
             throw new InvalidTokenException("유효하지 않은 Access Token입니다.");
         }
 
-        String username = tokenProvider.extractUsername(accessToken);
         Long expiration = tokenProvider.getExpiration(accessToken);
         if (expiration > 0) {
-            String blacklistKey = "blacklist:" + accessToken;
-            redisTemplate.opsForValue().set(
-                    blacklistKey,
-                    "logout",
-                    expiration,
-                    TimeUnit.MILLISECONDS
-            );
+            blacklistRepository.addToBlacklist(accessToken, expiration);
         }
 
+        // 2. Refresh Token 삭제 (화이트리스트에서 제거)
         String refreshToken = request.getRefreshToken();
         if (refreshToken != null && !refreshToken.isEmpty()) {
-            // Refresh Token 검증
-            if (!tokenProvider.validateToken(refreshToken)) {
-                throw new InvalidTokenException("유효하지 않은 Refresh Token입니다.");
-            }
-
-            // Redis에서 Refresh Token 삭제
-            String refreshTokenKey = "refreshToken:" + username;
-            redisTemplate.delete(refreshTokenKey);
-
+            refreshTokenRepository.deleteByToken(refreshToken);
         }
 
-        UserNotificationSetting userNotificationSetting = userNotificationSettingRepository.findByUserEmail(username)
-                .orElseThrow(() -> new ResourceNotFoundException("푸시 알림을 설정할 수 없습니다."));
+        // 3. 알림 설정 해제
+        String username = tokenProvider.extractUsername(accessToken);
+        UserNotificationSetting userNotificationSetting =
+                userNotificationSettingRepository.findByUserEmail(username)
+                        .orElseThrow(() -> new ResourceNotFoundException("푸시 알림을 설정할 수 없습니다."));
 
         userNotificationSetting.unsubscribe();
     }

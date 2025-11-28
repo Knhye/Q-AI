@@ -1,5 +1,6 @@
 package com.example.qnai.config;
 
+import com.example.qnai.repository.BlacklistRepository;
 import com.example.qnai.service.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -21,10 +22,15 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final TokenProvider tokenProvider;
     private final CustomUserDetailService userDetailsService;
+    private final BlacklistRepository blacklistRepository;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        return request.getRequestURI().startsWith("/api/auth/");
+        String uri = request.getRequestURI();
+
+        return uri.startsWith("/api/auth/") ||
+                uri.startsWith("/swagger-ui/") ||
+                uri.startsWith("/v3/api-docs/");
     }
 
     @Override
@@ -37,7 +43,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String token = header.substring(7);
 
                 if (tokenProvider.validateToken(token)) {
-                    if (tokenProvider.isBlacklisted(token)) {
+                    if (blacklistRepository.isBlacklisted(token)) {
                         response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
                                 "로그아웃된 토큰입니다.");
                         return;
@@ -55,7 +61,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         } catch(Exception e){
-            System.out.println("예외 발생");
             SecurityContextHolder.clearContext();
         }
 

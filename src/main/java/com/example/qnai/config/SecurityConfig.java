@@ -1,6 +1,7 @@
 package com.example.qnai.config;
 
 import com.example.qnai.common.ApiResponse;
+import com.example.qnai.repository.BlacklistRepository;
 import com.example.qnai.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
@@ -34,6 +35,7 @@ public class SecurityConfig {
     private final TokenProvider tokenProvider;
     private final CustomUserDetailService userDetailService;
     private final ObjectMapper objectMapper;
+    private final BlacklistRepository blacklistRepository;
 
     @Bean
     public PasswordEncoder passwordEncoder(){
@@ -47,7 +49,7 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter(){
-        return new JwtAuthenticationFilter(tokenProvider, userDetailService);
+        return new JwtAuthenticationFilter(tokenProvider, userDetailService, blacklistRepository);
     }
 
     @Bean

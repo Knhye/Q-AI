@@ -87,12 +87,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<String>> handleValidationExceptions(MethodArgumentNotValidException e) {
         System.out.println(e.getMessage());
-        return ApiResponse.fail("Bad Request: ", HttpStatus.BAD_REQUEST);
+        return ApiResponse.fail("요청이 올바르지 않습니다.", HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception e){
         System.out.println(e.getMessage());
-        return ApiResponse.fail("Internal Server Error: "+ e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        return ApiResponse.fail("서버 오류가 발생하였습니다. : "+ e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

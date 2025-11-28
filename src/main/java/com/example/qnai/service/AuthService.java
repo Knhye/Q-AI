@@ -1,6 +1,7 @@
 package com.example.qnai.service;
 
 import com.example.qnai.config.TokenProvider;
+import com.example.qnai.dto.refreshToken.RefreshDto;
 import com.example.qnai.dto.refreshToken.request.RefreshRequest;
 import com.example.qnai.dto.refreshToken.response.RefreshResponse;
 import com.example.qnai.dto.user.request.LoginRequest;
@@ -71,38 +72,18 @@ public class AuthService {
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
 
-        System.out.println(1);
 
         Users user = userRepository.findByEmailAndIsDeletedFalse(request.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("User doesn't exist"));
 
-        System.out.println(2);
-
-//        // 기존 RefreshToken이 존재하면 삭제
-//        refreshTokenRepository.findByUser(user)
-//                .ifPresent(existing -> {
-//                    refreshTokenRepository.delete(existing);
-//                    refreshTokenRepository.flush();
-//                });
-
         // 새 토큰 생성
         String accessToken = tokenProvider.createAccessToken(request.getEmail());
-        System.out.println(3);
+
         String refreshToken = tokenProvider.createRefreshToken(request.getEmail());
-        System.out.println(4);
 
-        // 새로운 RefreshToken 저장
-        RefreshToken refreshTokenEntity = refreshTokenRepository.findByUser(user)
-                .map(existing -> existing.updateToken(refreshToken, LocalDateTime.now().plusDays(7))) // update 메서드 사용
-                .orElseGet(() -> RefreshToken.builder()
-                        .token(refreshToken)
-                        .expiryDatetime(LocalDateTime.now().plusDays(7))
-                        .user(user)
-                        .build());
-        System.out.println(5);
-
-        refreshTokenRepository.save(refreshTokenEntity);
-        System.out.println(6);
+        // 3. Refresh Token을 Redis/DB에 저장 (화이트리스트)
+        long refreshTokenTtl = 7 * 24 * 60 * 60; // 7일 (초 단위)
+        refreshTokenRepository.save(refreshToken, user, refreshTokenTtl);
 
         return LoginResponse.builder()
                 .accessToken(accessToken)
@@ -110,17 +91,13 @@ public class AuthService {
                 .build();
     }
 
-
-
     public RefreshResponse refresh(RefreshRequest requestDto){
-        if(!tokenProvider.validateToken(requestDto.getRefreshToken())){
-            throw new InvalidTokenException("토큰 검증에 실패했습니다.");
-        }
 
-        RefreshToken existingRefreshToken = refreshTokenRepository.findByToken(requestDto.getRefreshToken())
+        RefreshDto existingRefreshToken = refreshTokenRepository.findByToken(requestDto.getRefreshToken())
                 .orElseThrow(() -> new InvalidTokenException("토큰을 찾을 수 없습니다."));
 
         if(existingRefreshToken.getExpiryDatetime().isBefore(LocalDateTime.now())){
+            refreshTokenRepository.deleteByToken(requestDto.getRefreshToken());
             throw new InvalidTokenException("토큰이 만료되었습니다.");
         }
 
