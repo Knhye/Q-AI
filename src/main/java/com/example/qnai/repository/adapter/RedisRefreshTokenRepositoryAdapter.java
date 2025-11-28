@@ -34,13 +34,13 @@ public class RedisRefreshTokenRepositoryAdapter implements RefreshTokenRepositor
     public Optional<RefreshDto> findByToken(String token) {
         String tokenKey = TOKEN_PREFIX + token;
 
-        String userId = redisTemplate.opsForValue().get(tokenKey);
-        if (userId == null) {
+        long ttl = redisTemplate.getExpire(tokenKey, TimeUnit.SECONDS);
+        if (ttl < 0) {
             return Optional.empty();
         }
 
-        Long ttl = redisTemplate.getExpire(tokenKey, TimeUnit.SECONDS);
-        if (ttl == null || ttl < 0) {
+        String userId = redisTemplate.opsForValue().get(tokenKey);
+        if (userId == null) {
             return Optional.empty();
         }
 
@@ -54,10 +54,7 @@ public class RedisRefreshTokenRepositoryAdapter implements RefreshTokenRepositor
 
     @Override
     public void deleteByToken(String token) {
-        // 1. token → userId 조회
         String tokenKey = TOKEN_PREFIX + token;
-
-        // 2. token 삭제
         redisTemplate.delete(tokenKey);
     }
 }
