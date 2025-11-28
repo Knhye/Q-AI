@@ -37,8 +37,9 @@ public class JpaRefreshTokenRepositoryAdapter implements RefreshTokenRepository 
 
     @Override
     @Transactional
-    public void deleteByToken(String token) {
-        jpaRepository.deleteByToken(token);
+    public void deleteByToken(String refreshToken) {
+        jpaRepository.findByToken(refreshToken)
+                .ifPresent(token -> jpaRepository.deleteByToken(token.getToken()));
     }
 
     // Entity → DTO 변환
