@@ -15,6 +15,7 @@ import com.example.qnai.repository.BlacklistRepository;
 import com.example.qnai.repository.RefreshTokenRepository;
 import com.example.qnai.repository.UserNotificationSettingRepository;
 import com.example.qnai.repository.UserRepository;
+import com.example.qnai.utils.TokenUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -35,37 +36,13 @@ import java.util.concurrent.TimeUnit;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final TokenProvider tokenProvider;
-    private final UserNotificationSettingRepository userNotificationSettingRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
-    private final BlacklistRepository blacklistRepository;
-
-    //이메일 추출
-    private String extractUserEmail(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-
-        if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
-            throw new NotLoggedInException("로그인이 필요한 요청입니다.");
-        }
-
-        String accessToken = bearerToken.substring(7); // "Bearer " 제거
-
-        if (!tokenProvider.validateToken(accessToken)) {
-            throw new InvalidTokenException("유효하지 않은 Access Token입니다.");
-        }
-
-        String email = tokenProvider.extractUsername(accessToken);
-
-        if(email.isEmpty()){
-            throw new UsernameNotFoundException("이메일을 추출할 수 없습니다.");
-        }
-
-        return email;
-    }
+    private final TokenUtils tokenUtils;
 
     @Transactional(readOnly = true)
-    public UserDetailResponse getUserDetail(Long id) {
-        Users user = userRepository.findById(id)
+    public UserDetailResponse getUserDetail(HttpServletRequest httpServletRequest) {
+        String email = tokenUtils.extractUserEmail(httpServletRequest);
+
+        Users user = userRepository.findByEmailAndIsDeletedFalse(email)
                 .orElseThrow(() -> new UsernameNotFoundException("유저가 존재하지 않습니다."));
 
         return UserDetailResponse.builder()
@@ -78,8 +55,10 @@ public class UserService {
     }
 
     @Transactional
-    public UserUpdateResponse updateUser(Long id, UserUpdateRequest request) {
-        Users user = userRepository.findById(id)
+    public UserUpdateResponse updateUser(HttpServletRequest httpServletRequest, UserUpdateRequest request) {
+        String email = tokenUtils.extractUserEmail(httpServletRequest);
+
+        Users user = userRepository.findByEmailAndIsDeletedFalse(email)
                 .orElseThrow(() -> new UsernameNotFoundException("유저가 존재하지 않습니다."));
 
         user.updateInfo(
@@ -98,8 +77,10 @@ public class UserService {
     }
 
     @Transactional
-    public UpdateUserPasswordResponse updateUserPassword(Long id, UserPasswordUpdateRequest request) {
-        Users user = userRepository.findById(id)
+    public UpdateUserPasswordResponse updateUserPassword(HttpServletRequest httpServletRequest, UserPasswordUpdateRequest request) {
+        String email = tokenUtils.extractUserEmail(httpServletRequest);
+
+        Users user = userRepository.findByEmailAndIsDeletedFalse(email)
                 .orElseThrow(() -> new UsernameNotFoundException("유저가 존재하지 않습니다."));
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
@@ -120,76 +101,14 @@ public class UserService {
     }
 
     @Transactional
-    public void logout(HttpServletRequest httpServletRequest, LogoutRequest request) {
-        // 1. Access Token 추출 및 검증
-        String accessToken = extractAccessToken(httpServletRequest);
-        if (accessToken == null) {
-            throw new NotLoggedInException("로그인이 필요한 요청입니다.");
-        }
-
-        if (!tokenProvider.validateToken(accessToken)) {
-            throw new InvalidTokenException("유효하지 않은 Access Token입니다.");
-        }
-
-        Long expiration = tokenProvider.getExpiration(accessToken);
-        if (expiration > 0) {
-            blacklistRepository.addToBlacklist(accessToken, expiration);
-        }
-
-        // 2. Refresh Token 삭제 (화이트리스트에서 제거)
-        String refreshToken = request.getRefreshToken();
-        if (refreshToken != null && !refreshToken.isEmpty()) {
-            refreshTokenRepository.deleteByToken(refreshToken);
-        }
-
-        // 3. 알림 설정 해제
-        String username = tokenProvider.extractUsername(accessToken);
-        UserNotificationSetting userNotificationSetting =
-                userNotificationSettingRepository.findByUserEmail(username)
-                        .orElseThrow(() -> new ResourceNotFoundException("푸시 알림을 설정할 수 없습니다."));
-
-        userNotificationSetting.unsubscribe();
-    }
-
-    private String extractAccessToken(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7); // "Bearer " 제거
-        }
-
-        return null;
-    }
-
-    @Transactional
-    public void deleteUser(Long id) {
-        Users user = userRepository.findById(id)
-                .orElseThrow(() -> new UsernameNotFoundException("유저가 존재하지 않습니다."));
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-
-        String email = userDetails.getUsername();
-
-        if(email.isEmpty()){
-            throw new NotLoggedInException("로그인 되지 않은 사용자입니다.");
-        }
-
-        if(!Objects.equals(email, user.getEmail())){
-            throw new NotAcceptableUserException("접근할 수 없는 유저입니다.");
-        }
-
-        user.delete();
-        userRepository.save(user);
-    }
-
-    @Transactional
     public void updateUserFcmToken(HttpServletRequest httpServletRequest, UserFcmTokenUpdateRequest request) {
-        String email = extractUserEmail(httpServletRequest);
+        String email = tokenUtils.extractUserEmail(httpServletRequest);
 
         Users user = userRepository.findByEmailAndIsDeletedFalse(email)
                 .orElseThrow(() -> new UsernameNotFoundException("해당 유저가 존재하지 않습니다."));
 
         user.updateFcmToken(request.getFcmToken());
     }
+
+
 }

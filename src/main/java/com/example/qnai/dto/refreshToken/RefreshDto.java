@@ -9,5 +9,6 @@ import java.time.LocalDateTime;
 @Builder
 public class RefreshDto {
     private String token;
+    private Long userId;
     private LocalDateTime expiryDatetime;
 }

@@ -3,21 +3,21 @@ package com.example.qnai.controller;
 
 import com.example.qnai.common.ApiResponse;
 import com.example.qnai.dto.refreshToken.response.RefreshResponse;
+import com.example.qnai.dto.user.request.DeleteUserRequest;
 import com.example.qnai.dto.user.request.LoginRequest;
 import com.example.qnai.dto.refreshToken.request.RefreshRequest;
+import com.example.qnai.dto.user.request.LogoutRequest;
 import com.example.qnai.dto.user.request.SignupRequest;
 import com.example.qnai.dto.user.response.LoginResponse;
 import com.example.qnai.service.AuthService;
 import com.example.qnai.dto.user.response.SignupResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -46,5 +46,19 @@ public class AuthController {
     public ResponseEntity<ApiResponse<RefreshResponse>> refresh(@Valid @RequestBody RefreshRequest request){
         RefreshResponse response = authService.refresh(request);
         return ApiResponse.ok(response, "액세스 토큰이 성공적으로 발급되었습니다.");
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "User Logout", description = "유저 로그아웃 API")
+    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest httpServletRequest, @Valid @RequestBody LogoutRequest request){
+        authService.logout(httpServletRequest, request);
+        return ApiResponse.ok("로그아웃이 성공적으로 완료되었습니다.");
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "User Logout", description = "회원 탈퇴 API")
+    public ResponseEntity<ApiResponse<Void>> deleteUser(HttpServletRequest httpServletRequest, @Valid @RequestBody DeleteUserRequest request){
+        authService.deleteUser(httpServletRequest, request);
+        return ApiResponse.ok("회원 정보를 성공적으로 삭제하였습니다.");
     }
 }

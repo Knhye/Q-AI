@@ -4,19 +4,22 @@ import com.example.qnai.config.TokenProvider;
 import com.example.qnai.dto.refreshToken.RefreshDto;
 import com.example.qnai.dto.refreshToken.request.RefreshRequest;
 import com.example.qnai.dto.refreshToken.response.RefreshResponse;
+import com.example.qnai.dto.user.request.DeleteUserRequest;
 import com.example.qnai.dto.user.request.LoginRequest;
+import com.example.qnai.dto.user.request.LogoutRequest;
 import com.example.qnai.dto.user.request.SignupRequest;
 import com.example.qnai.dto.user.response.LoginResponse;
 import com.example.qnai.dto.user.response.SignupResponse;
 import com.example.qnai.entity.RefreshToken;
 import com.example.qnai.entity.UserNotificationSetting;
 import com.example.qnai.entity.Users;
-import com.example.qnai.global.exception.InvalidTokenException;
-import com.example.qnai.global.exception.UserAlreadyExistException;
+import com.example.qnai.global.exception.*;
+import com.example.qnai.repository.BlacklistRepository;
 import com.example.qnai.repository.RefreshTokenRepository;
 import com.example.qnai.repository.UserNotificationSettingRepository;
 import com.example.qnai.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -26,6 +29,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +42,7 @@ public class AuthService {
     private final TokenProvider tokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserNotificationSettingRepository userNotificationSettingRepository;
+    private final BlacklistRepository blacklistRepository;
 
 
     public SignupResponse signup(SignupRequest request){
@@ -107,5 +113,82 @@ public class AuthService {
         return RefreshResponse.builder()
                 .accessToken(newAccessToken)
                 .build();
+    }
+
+    @Transactional
+    public void logout(HttpServletRequest httpServletRequest, LogoutRequest request) {
+        // 1. Access Token 추출 및 검증
+        String accessToken = extractAccessToken(httpServletRequest);
+        if (accessToken == null) {
+            throw new NotLoggedInException("로그인이 필요한 요청입니다.");
+        }
+
+        if (!tokenProvider.validateToken(accessToken)) {
+            throw new InvalidTokenException("유효하지 않은 Access Token입니다.");
+        }
+
+        Long expiration = tokenProvider.getExpiration(accessToken);
+        if (expiration > 0) {
+            blacklistRepository.addToBlacklist(accessToken, expiration);
+        }
+
+        // 2. Refresh Token 삭제 (화이트리스트에서 제거)
+        String refreshToken = request.getRefreshToken();
+        if (refreshToken != null && !refreshToken.isEmpty()) {
+            refreshTokenRepository.deleteByToken(refreshToken);
+        }
+
+        // 3. 알림 설정 해제
+        String username = tokenProvider.extractUsername(accessToken);
+        UserNotificationSetting userNotificationSetting =
+                userNotificationSettingRepository.findByUserEmail(username)
+                        .orElseThrow(() -> new ResourceNotFoundException("푸시 알림을 설정할 수 없습니다."));
+
+        userNotificationSetting.unsubscribe();
+    }
+
+    @Transactional
+    public void deleteUser(HttpServletRequest httpServletRequest, DeleteUserRequest request) {
+        String bearerToken = httpServletRequest.getHeader("Authorization");
+        if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
+            throw new InvalidTokenException("토큰 형식이 잘못되었거나 유효하지 않습니다.");
+        }
+        String accessToken = bearerToken.substring(7);
+
+        if (!tokenProvider.validateToken(accessToken)) {
+            throw new InvalidTokenException("유효하지 않거나 만료된 Access Token입니다.");
+        }
+
+        String email = tokenProvider.extractUsername(accessToken);
+
+        Users user = userRepository.findByEmailAndIsDeletedFalse(email)
+                .orElseThrow(() -> new UsernameNotFoundException("유저가 존재하지 않습니다."));
+
+        RefreshDto refreshDto = refreshTokenRepository.findByToken(request.getRefreshToken())
+                .orElseThrow(() -> new InvalidTokenException("토큰이 존재하지 않습니다."));
+
+        // **[핵심 개선]** 리프레시 토큰의 소유자(email)가 현재 삭제 요청 유저와 일치하는지 확인
+        if (!refreshDto.getUserId().equals(user.getId())) {
+            throw new NotAcceptableUserException("요청에 포함된 Refresh Token이 현재 유저의 토큰이 아닙니다.");
+        }
+
+        refreshTokenRepository.deleteByToken(request.getRefreshToken());
+
+
+        long remainingTtlSeconds = tokenProvider.getExpiration(accessToken);
+        blacklistRepository.addToBlacklist(accessToken, remainingTtlSeconds);
+
+        user.delete();
+        userRepository.save(user);
+    }
+
+    private String extractAccessToken(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7); // "Bearer " 제거
+        }
+
+        return null;
     }
 }

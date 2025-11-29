@@ -48,6 +48,7 @@ public class RedisRefreshTokenRepositoryAdapter implements RefreshTokenRepositor
 
         return Optional.of(RefreshDto.builder()
                 .token(token)
+                .userId(Long.valueOf(userId))
                 .expiryDatetime(expiryDatetime)
                 .build());
     }

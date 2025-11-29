@@ -1,6 +1,5 @@
 package com.example.qnai.service;
 
-import com.example.qnai.config.TokenProvider;
 import com.example.qnai.dto.notification.request.NotificationReadRequest;
 import com.example.qnai.dto.notification.request.NotificationSettingRequest;
 import com.example.qnai.dto.notification.response.NotificationItem;
@@ -9,13 +8,11 @@ import com.example.qnai.dto.notification.response.NotificationSettingResponse;
 import com.example.qnai.entity.Notification;
 import com.example.qnai.entity.UserNotificationSetting;
 import com.example.qnai.entity.Users;
-import com.example.qnai.global.exception.InvalidTokenException;
-import com.example.qnai.global.exception.NotLoggedInException;
 import com.example.qnai.global.exception.ResourceNotFoundException;
 import com.example.qnai.repository.NotificationRepository;
 import com.example.qnai.repository.UserNotificationSettingRepository;
 import com.example.qnai.repository.UserRepository;
-import io.swagger.v3.oas.annotations.Operation;
+import com.example.qnai.utils.TokenUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -34,36 +31,13 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserNotificationSettingRepository userNotificationSettingRepository;
     private final UserRepository userRepository;
-    private final TokenProvider tokenProvider;
     private final ExternalPushService externalPushService;
-
-    //이메일 추출
-    private String extractUserEmail(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-
-        if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
-            throw new NotLoggedInException("로그인이 필요한 요청입니다.");
-        }
-
-        String accessToken = bearerToken.substring(7); // "Bearer " 제거
-
-        if (!tokenProvider.validateToken(accessToken)) {
-            throw new InvalidTokenException("유효하지 않은 Access Token입니다.");
-        }
-
-        String email = tokenProvider.extractUsername(accessToken);
-
-        if(email.isEmpty()){
-            throw new UsernameNotFoundException("이메일을 추출할 수 없습니다.");
-        }
-
-        return email;
-    }
+    private final TokenUtils tokenUtils;
 
     //구독 설정/해지
     @Transactional
     public NotificationSettingResponse notificationSetting(HttpServletRequest httpServletRequest, NotificationSettingRequest request) {
-        String email = extractUserEmail(httpServletRequest);
+        String email = tokenUtils.extractUserEmail(httpServletRequest);
 
         Users user = userRepository.findByEmailAndIsDeletedFalse(email)
                 .orElseThrow(() -> new UsernameNotFoundException("해당 유저가 존재하지 않습니다."));
@@ -109,6 +83,50 @@ public class NotificationService {
         }
     }
 
+    //알림 읽음 처리
+    @Transactional
+    public void readNotifications(HttpServletRequest httpServletRequest, NotificationReadRequest requests) {
+        String email = tokenUtils.extractUserEmail(httpServletRequest);
+
+        Users user = userRepository.findByEmailAndIsDeletedFalse(email)
+                .orElseThrow(() -> new UsernameNotFoundException("해당 유저는 존재하지 않습니다."));
+
+        Set<Long> notificationIds = new HashSet<>(requests.getNotificationId());
+
+        List<Notification> notificationsToUpdate = notificationRepository.findAllByIdIn(notificationIds);
+
+        for(Notification notification : notificationsToUpdate){
+            if (!notification.isRead() && notification.getUser().equals(user)) {
+                notification.markAsRead();
+            }
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public NotificationResponse getNotifications(HttpServletRequest httpServletRequest) {
+        String email = tokenUtils.extractUserEmail(httpServletRequest);
+
+        Users user = userRepository.findByEmailAndIsDeletedFalse(email)
+                .orElseThrow(() -> new UsernameNotFoundException("해당 유저가 존재하지 않습니다."));
+
+        List<Notification> notifications = notificationRepository.findAllByUser(user);
+
+        List<NotificationItem> items = notifications.stream()
+                .map(item ->
+                    NotificationItem.builder()
+                            .notificationId(item.getId())
+                            .title(item.getTitle())
+                            .content(item.getContent())
+                            .isRead(item.isRead())
+                            .build()
+                ).toList();
+
+        return NotificationResponse.builder()
+                .items(items)
+                .unreadCount(notifications.size())
+                .build();
+    }
+
     private Notification createAndSaveNotification(Users user) {
         // 알림의 내용과 제목은 필요에 따라 동적으로 생성합니다. (예: 사용자 이름, 오늘의 정보 등)
         String title = "오늘의 질문을 생성해보세요.";
@@ -133,49 +151,5 @@ public class NotificationService {
                 notification.getTitle(),
                 notification.getContent()
         );
-    }
-
-    //알림 읽음 처리
-    @Transactional
-    public void readNotifications(HttpServletRequest httpServletRequest, NotificationReadRequest requests) {
-        String email = extractUserEmail(httpServletRequest);
-
-        Users user = userRepository.findByEmailAndIsDeletedFalse(email)
-                .orElseThrow(() -> new UsernameNotFoundException("해당 유저는 존재하지 않습니다."));
-
-        Set<Long> notificationIds = new HashSet<>(requests.getNotificationId());
-
-        List<Notification> notificationsToUpdate = notificationRepository.findAllByIdIn(notificationIds);
-
-        for(Notification notification : notificationsToUpdate){
-            if (!notification.isRead() && notification.getUser().equals(user) && !notification.getUser().isDeleted()) {
-                notification.markAsRead();
-            }
-        }
-    }
-
-    @Transactional(readOnly = true)
-    public NotificationResponse getNotifications(HttpServletRequest httpServletRequest) {
-        String email = extractUserEmail(httpServletRequest);
-
-        Users user = userRepository.findByEmailAndIsDeletedFalse(email)
-                .orElseThrow(() -> new UsernameNotFoundException("해당 유저가 존재하지 않습니다."));
-
-        List<Notification> notifications = notificationRepository.findAllByUser(user);
-
-        List<NotificationItem> items = notifications.stream()
-                .map(item ->
-                    NotificationItem.builder()
-                            .notificationId(item.getId())
-                            .title(item.getTitle())
-                            .content(item.getContent())
-                            .isRead(item.isRead())
-                            .build()
-                ).toList();
-
-        return NotificationResponse.builder()
-                .items(items)
-                .unreadCount(notifications.size())
-                .build();
     }
 }

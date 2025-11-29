@@ -46,6 +46,7 @@ public class JpaRefreshTokenRepositoryAdapter implements RefreshTokenRepository 
     private RefreshDto toDto(RefreshToken refreshToken) {
         return RefreshDto.builder()
                 .token(refreshToken.getToken())
+                .userId(refreshToken.getUser().getId())
                 .expiryDatetime(refreshToken.getExpiryDatetime())
                 .build();
     }

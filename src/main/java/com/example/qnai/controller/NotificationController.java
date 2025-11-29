@@ -5,7 +5,6 @@ import com.example.qnai.dto.notification.request.NotificationReadRequest;
 import com.example.qnai.dto.notification.request.NotificationSettingRequest;
 import com.example.qnai.dto.notification.response.NotificationResponse;
 import com.example.qnai.dto.notification.response.NotificationSettingResponse;
-import com.example.qnai.entity.Notification;
 import com.example.qnai.service.NotificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

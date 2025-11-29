@@ -10,6 +10,7 @@ import com.example.qnai.entity.Users;
 import com.example.qnai.global.exception.*;
 import com.example.qnai.repository.QnaRepository;
 import com.example.qnai.repository.UserRepository;
+import com.example.qnai.utils.TokenUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -26,36 +27,13 @@ import java.util.Objects;
 public class QnaService {
     private final QnaRepository qnaRepository;
     private final UserRepository userRepository;
-    private final TokenProvider tokenProvider;
     private final GptOssService gptOssService;
-
-    //이메일 추출
-    private String extractUserEmail(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-
-        if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
-            throw new NotLoggedInException("로그인이 필요한 요청입니다.");
-        }
-
-        String accessToken = bearerToken.substring(7); // "Bearer " 제거
-
-        if (!tokenProvider.validateToken(accessToken)) {
-            throw new InvalidTokenException("유효하지 않은 Access Token입니다.");
-        }
-
-        String email = tokenProvider.extractUsername(accessToken);
-
-        if(email.isEmpty()){
-            throw new UsernameNotFoundException("이메일을 추출할 수 없습니다.");
-        }
-
-        return email;
-    }
+    private final TokenUtils tokenUtils;
 
     //질문 생성
     @Transactional
     public QnaGenerateResponse generateQuestion(HttpServletRequest httpServletRequest, QnaGenerateRequest request) {
-        String email = extractUserEmail(httpServletRequest);
+        String email = tokenUtils.extractUserEmail(httpServletRequest);
 
         Users user = userRepository.findByEmailAndIsDeletedFalse(email)
                 .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 유저입니다."));
@@ -92,7 +70,7 @@ public class QnaService {
         QnA qnA = qnaRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
 
-        String email = extractUserEmail(httpServletRequest);
+        String email = tokenUtils.extractUserEmail(httpServletRequest);
 
         if(!email.equals(qnA.getUser().getEmail())){
             throw new NotAcceptableUserException("다른 유저의 질의응답은 조회할 수 없습니다.");
@@ -116,7 +94,7 @@ public class QnaService {
     public List<QuestionTitlesResponse> getRecentQuestionTitles(HttpServletRequest httpServletRequest) {
 
         List<QnA> qnAList = qnaRepository.findAllByUserEmailOrderByUpdatedAtDesc( // 최신순 정렬 메서드
-                extractUserEmail(httpServletRequest)
+                tokenUtils.extractUserEmail(httpServletRequest)
         );
 
         return qnAList.stream()
@@ -135,7 +113,7 @@ public class QnaService {
         QnA qnA = qnaRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
 
-        String email = extractUserEmail(httpServletRequest);
+        String email = tokenUtils.extractUserEmail(httpServletRequest);
 
         if(!email.equals(qnA.getUser().getEmail())){
             throw new NotAcceptableUserException("다른 유저의 질의응답은 수정할 수 없습니다.");
@@ -157,7 +135,7 @@ public class QnaService {
         QnA qnA = qnaRepository.findByIdAndIsDeletedFalse(request.getQnaId())
                 .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
 
-        String email = extractUserEmail(httpServletRequest);
+        String email = tokenUtils.extractUserEmail(httpServletRequest);
 
         if(!email.equals(qnA.getUser().getEmail())){
             throw new NotAcceptableUserException("다른 유저의 질의응답에 피드백을 생성할 수 없습니다.");
@@ -185,7 +163,7 @@ public class QnaService {
         QnA qnA = qnaRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
 
-        String email = extractUserEmail(httpServletRequest);
+        String email = tokenUtils.extractUserEmail(httpServletRequest);
 
         if(!Objects.equals(qnA.getUser().getEmail(), email)){
             throw new NotAcceptableUserException("다른 유저의 QnA는 삭제할 수 없습니다.");
