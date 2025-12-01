@@ -69,17 +69,20 @@ public class NotificationService {
         List<UserNotificationSetting> targetSettings = userNotificationSettingRepository.findUsersReadyToSendNotification(now, today);
 
         for (UserNotificationSetting setting : targetSettings) {
+            if(!setting.isEnabled()){
+                continue;
+            }
+
             Users user = setting.getUser();
 
-            // 1. 알림 데이터 생성 (DB 저장)
-            Notification notification = createAndSaveNotification(user);
+            if(!user.isDeleted()){
+                Notification notification = createAndSaveNotification(user);
 
-            // 2. 외부 푸시 알림 전송 (실제 디바이스로 전송)
-            sendPushNotification(user, notification);
+                sendPushNotification(user, notification);
 
-            // 3. 마지막 전송 날짜 업데이트
-            setting.updateLastSentDate(today);
-            userNotificationSettingRepository.save(setting); // 변경된 엔티티 저장
+                setting.updateLastSentDate(today);
+                userNotificationSettingRepository.save(setting);
+            }
         }
     }
 
