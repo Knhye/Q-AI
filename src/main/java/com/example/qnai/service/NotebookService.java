@@ -75,10 +75,8 @@ public class NotebookService {
             throw new DuplicateResourceException("질의응답은 하나의 노트북에서만 설정할 수 있습니다.");
         }
 
-        //노트북 qna 리스트에 추가
         notebook.getQnAs().add(qnA);
 
-        //qna 노트북 설정
         qnA.addNotebook(notebook);
     }
 

@@ -98,7 +98,6 @@ public class GptOssService {
                 answer
         );
 
-        // OpenAI 요청 바디
         Map<String, Object> body = Map.of(
                 "model", "gpt-4o-mini",
                 "messages", List.of(
@@ -124,8 +123,6 @@ public class GptOssService {
 
             throw new AiNoResponseException("OpenAI 응답이 올바르지 않습니다.");
         }
-
-        // 응답 DTO 구성
 
         return openaiResponse.getChoices().getFirst().getMessage().getContent();
     }

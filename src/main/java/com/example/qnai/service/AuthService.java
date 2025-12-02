@@ -82,12 +82,10 @@ public class AuthService {
         Users user = userRepository.findByEmailAndIsDeletedFalse(request.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("User doesn't exist"));
 
-        // 새 토큰 생성
         String accessToken = tokenProvider.createAccessToken(request.getEmail());
 
         String refreshToken = tokenProvider.createRefreshToken(request.getEmail());
 
-        // 3. Refresh Token을 Redis/DB에 저장 (화이트리스트)
         long refreshTokenTtl = 7 * 24 * 60 * 60; // 7일 (초 단위)
         refreshTokenRepository.save(refreshToken, user, refreshTokenTtl);
 
@@ -117,7 +115,6 @@ public class AuthService {
 
     @Transactional
     public void logout(HttpServletRequest httpServletRequest, LogoutRequest request) {
-        // 1. Access Token 추출 및 검증
         String accessToken = extractAccessToken(httpServletRequest);
         if (accessToken == null) {
             throw new NotLoggedInException("로그인이 필요한 요청입니다.");
@@ -132,13 +129,11 @@ public class AuthService {
             blacklistRepository.addToBlacklist(accessToken, expiration);
         }
 
-        // 2. Refresh Token 삭제 (화이트리스트에서 제거)
         String refreshToken = request.getRefreshToken();
         if (refreshToken != null && !refreshToken.isEmpty()) {
             refreshTokenRepository.deleteByToken(refreshToken);
         }
 
-        // 3. 알림 설정 해제
         String username = tokenProvider.extractUsername(accessToken);
         UserNotificationSetting userNotificationSetting =
                 userNotificationSettingRepository.findByUserEmail(username)
@@ -167,7 +162,6 @@ public class AuthService {
         RefreshDto refreshDto = refreshTokenRepository.findByToken(request.getRefreshToken())
                 .orElseThrow(() -> new InvalidTokenException("토큰이 존재하지 않습니다."));
 
-        // **[핵심 개선]** 리프레시 토큰의 소유자(email)가 현재 삭제 요청 유저와 일치하는지 확인
         if (!refreshDto.getUserId().equals(user.getId())) {
             throw new NotAcceptableUserException("요청에 포함된 Refresh Token이 현재 유저의 토큰이 아닙니다.");
         }

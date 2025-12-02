@@ -3,29 +3,75 @@ package com.example.qnai.config;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import com.google.firebase.messaging.FirebaseMessaging;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 @Configuration
+@Slf4j
 public class FirebaseConfig {
+
+    private final ClassPathResource firebaseResource;
+    private final String projectId;
+
+    public FirebaseConfig(
+            @Value("${fcm.file_path}") String firebaseFilePath,
+            @Value("${fcm.project_id}") String projectId
+    ) {
+        this.firebaseResource = new ClassPathResource(firebaseFilePath);
+        this.projectId = projectId;
+    }
+
     @PostConstruct
-    public void initialize() throws IOException {
+    public void initialize() {
+        try {
+            // 이미 초기화되어 있으면 스킵
+            if (!FirebaseApp.getApps().isEmpty()) {
+                return;
+            }
 
-        // 1. 서비스 계정 파일 로드 (파일명은 실제 파일명으로 변경하세요)
-        ClassPathResource resource = new ClassPathResource("firebase/qnai-firebase-service-account.json");
+            // 파일 경로가 비어있으면 스킵 (테스트 모드)
+            if (!firebaseResource.exists()) {
+                return;
+            }
 
-        // 2. Firebase 옵션 설정
-        FirebaseOptions options = FirebaseOptions.builder()
-                .setCredentials(GoogleCredentials.fromStream(resource.getInputStream()))
-                // (Optional) Database URL, Storage Bucket 등 추가 설정 가능
-                .build();
+            // ClassPathResource에서 InputStream 가져오기
+            InputStream serviceAccount = firebaseResource.getInputStream();
 
-        // 3. Firebase 앱 초기화
-        if (FirebaseApp.getApps().isEmpty()) {
+            FirebaseOptions options = FirebaseOptions.builder()
+                    .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                    .setProjectId(projectId)
+                    .build();
+
             FirebaseApp.initializeApp(options);
+
+
+        } catch (IOException e) {
+            log.error("Firebase 초기화 실패: {}", e.getMessage(), e);
         }
+    }
+
+    @Bean
+    public FirebaseMessaging firebaseMessaging() {
+        // Firebase가 초기화되지 않았을 경우를 대비
+        if (FirebaseApp.getApps().isEmpty()) {
+            return null;
+        }
+        return FirebaseMessaging.getInstance(firebaseApp());
+    }
+
+    @Bean
+    public FirebaseApp firebaseApp() {
+        if (FirebaseApp.getApps().isEmpty()) {
+            return null;
+        }
+        return FirebaseApp.getInstance();
     }
 }

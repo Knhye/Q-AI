@@ -1,5 +1,6 @@
 package com.example.qnai.service;
 
+import com.example.qnai.dto.fcm.request.MessagePushServiceRequest;
 import com.example.qnai.dto.notification.request.NotificationReadRequest;
 import com.example.qnai.dto.notification.request.NotificationSettingRequest;
 import com.example.qnai.dto.notification.response.NotificationItem;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -65,24 +67,43 @@ public class NotificationService {
     public void processScheduledNotifications(LocalTime now) {
         LocalDate today = LocalDate.now();
 
-        // 현재 시각(분 단위까지)과 선호 시간이 일치하고, 오늘 알림을 받지 않은 사용자 목록 조회
-        List<UserNotificationSetting> targetSettings = userNotificationSettingRepository.findUsersReadyToSendNotification(now, today);
+        List<UserNotificationSetting> targetSettings =
+                userNotificationSettingRepository.findUsersReadyToSendNotification(now, today);
+
+        if (targetSettings.isEmpty()) {
+            return;
+        }
+
+        // 배치 전송을 위한 요청 리스트
+        List<MessagePushServiceRequest> batchRequests = new ArrayList<>();
+        List<UserNotificationSetting> settingsToUpdate = new ArrayList<>();
 
         for (UserNotificationSetting setting : targetSettings) {
-            if(!setting.isEnabled()){
+            if (!setting.isEnabled()) {
                 continue;
             }
 
             Users user = setting.getUser();
 
-            if(!user.isDeleted()){
+            if (!user.isDeleted()) {
                 Notification notification = createAndSaveNotification(user);
 
-                sendPushNotification(user, notification);
+                batchRequests.add(MessagePushServiceRequest.of(
+                        user.getId(),
+                        notification.getId(),
+                        notification.getTitle(),
+                        notification.getContent()
+                ));
 
                 setting.updateLastSentDate(today);
-                userNotificationSettingRepository.save(setting);
+                settingsToUpdate.add(setting);
             }
+        }
+
+        // 배치로 한 번에 전송
+        if (!batchRequests.isEmpty()) {
+            externalPushService.send(batchRequests);
+            userNotificationSettingRepository.saveAll(settingsToUpdate);
         }
     }
 
@@ -131,7 +152,6 @@ public class NotificationService {
     }
 
     private Notification createAndSaveNotification(Users user) {
-        // 알림의 내용과 제목은 필요에 따라 동적으로 생성합니다. (예: 사용자 이름, 오늘의 정보 등)
         String title = "오늘의 질문을 생성해보세요.";
         String content = user.getNickname() + "님, 오늘의 기술 면접 질문은 무엇일까요?";
 
@@ -142,17 +162,5 @@ public class NotificationService {
                 .build();
 
         return notificationRepository.save(notification);
-    }
-
-    private void sendPushNotification(Users user, Notification notification) {
-        // 이 부분은 외부 푸시 서비스(FCM, APNS 등)와의 연동 로직이 들어갑니다.
-        // 명세서의 응답 형식에 맞추어 정보를 구성하여 전송합니다.
-
-        externalPushService.send(
-                user.getId(),
-                notification.getId(),
-                notification.getTitle(),
-                notification.getContent()
-        );
     }
 }

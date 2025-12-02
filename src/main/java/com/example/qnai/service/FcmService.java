@@ -1,59 +1,82 @@
 package com.example.qnai.service;
 
+import com.example.qnai.dto.fcm.request.MessagePushServiceRequest;
 import com.example.qnai.entity.Users;
 import com.example.qnai.global.exception.CannotSendNotificationException;
-import com.example.qnai.global.exception.ResourceNotFoundException;
 import com.example.qnai.repository.UserRepository;
-import com.google.firebase.messaging.FirebaseMessaging;
-import com.google.firebase.messaging.Message;
-import com.google.firebase.messaging.Notification;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.messaging.*;
 import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.util.InternalException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class FcmService implements ExternalPushService{
 
     private final UserRepository userRepository;
+    private final FirebaseMessaging firebaseMessaging;
+    private static final int BATCH_SIZE = 500;
 
-    public void send(
-            long userId,
-            long notificationId,
-            String title,
-            String content) {
-
-        // 1. 사용자 ID로 FCM 토큰 조회
-        Users user = userRepository.findById(userId)
-                .orElseThrow(() -> new UsernameNotFoundException("해당 유저가 존재하지 않습니다."));
-
-        String fcmToken = user.getFcmToken();
-
-        if (fcmToken == null || fcmToken.isEmpty()) {
-            throw new CannotSendNotificationException("알림을 보낼 수 없습니다. : Fcm token이 존재하지 않음.");
+    public void send(List<MessagePushServiceRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
+            return;
         }
 
-        // 2. FCM 메시지 구성
-        Notification firebaseNotification = Notification.builder()
-                .setTitle(title)
-                .setBody(content)
-                .build();
+        if (FirebaseApp.getApps().isEmpty()) {
+            return;
+        }
 
-        // Data Payload 추가 (옵션): 알림 클릭 시 앱에서 처리할 데이터
-        // 예: 어떤 알림인지 구분하기 위한 notificationId
-        Message message = Message.builder()
-                .setToken(fcmToken) // 대상 디바이스 토큰
-                .setNotification(firebaseNotification) // 사용자에게 보여지는 알림
-                .putData("notificationId", String.valueOf(notificationId))
-                .putData("click_action", "FLUTTER_NOTIFICATION_CLICK") // 앱 설정에 따른 값
-                .build();
+        List<Long> userIds = requests.stream()
+                .map(MessagePushServiceRequest::userId)
+                .distinct()
+                .toList();
 
-        // 3. 메시지 전송
+        Map<Long, String> userTokenMap = userRepository.findAllById(userIds).stream()
+                .filter(user -> user.getFcmToken() != null && !user.getFcmToken().isEmpty())
+                .collect(Collectors.toMap(Users::getId, Users::getFcmToken));
+
+        // 메시지 리스트 구성
+        List<Message> messages = requests.stream()
+                .filter(request -> userTokenMap.containsKey(request.userId()))
+                .map(request -> buildMessage(userTokenMap.get(request.userId()), request))
+                .toList();
+
+        if (messages.isEmpty()) {
+            return;
+        }
+
         try {
-            FirebaseMessaging.getInstance().send(message);
+            sendInBatches(messages);
         } catch (Exception e) {
-            throw new CannotSendNotificationException("알림을 전송할 수 없습니다.");
+            throw new CannotSendNotificationException("배치 알림 전송 중 오류가 발생했습니다: " + e.getMessage());
         }
+    }
+
+    private void sendInBatches(List<Message> messages) throws FirebaseMessagingException {
+        for (int i = 0; i < messages.size(); i += BATCH_SIZE) {
+            int end = Math.min(i + BATCH_SIZE, messages.size());
+            List<Message> batch = messages.subList(i, end);
+
+            firebaseMessaging.sendEach(batch); // FirebaseMessaging 사용
+        }
+    }
+
+    private Message buildMessage(String fcmToken, MessagePushServiceRequest request) {
+        Notification firebaseNotification = Notification.builder()
+                .setTitle(request.title())
+                .setBody(request.body())
+                .build();
+
+        return Message.builder()
+                .setToken(fcmToken)
+                .setNotification(firebaseNotification)
+                .putData("notificationId", String.valueOf(request.notificationId()))
+                .putData("click_action", "FLUTTER_NOTIFICATION_CLICK")
+                .build();
     }
 }
