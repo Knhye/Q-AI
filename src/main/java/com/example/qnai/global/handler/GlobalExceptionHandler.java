@@ -73,9 +73,16 @@ public class GlobalExceptionHandler {
         return ApiResponse.fail(e.getMessage(), HttpStatus.CONFLICT);
     }
 
+    //잘못된 패스워드를 입력했을 때
+    @ExceptionHandler(BadPasswordRequestException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBadPasswordRequestException(BadPasswordRequestException e){
+        System.out.println(e.getMessage());
+        return ApiResponse.fail(e.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
     //요청 값이 올바르지 않을 때
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<String>> handleValidationExceptions(MethodArgumentNotValidException e) {
+    public ResponseEntity<ApiResponse<String>> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
         System.out.println(e.getMessage());
         return ApiResponse.fail("요청이 올바르지 않습니다.", HttpStatus.BAD_REQUEST);
     }

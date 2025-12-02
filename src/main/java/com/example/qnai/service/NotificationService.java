@@ -117,14 +117,17 @@ public class NotificationService {
 
         Set<Long> notificationIds = new HashSet<>(requests.getNotificationId());
 
-        List<Notification> notificationsToUpdate = notificationRepository.findAllByIdIn(notificationIds);
+        List<Notification> notificationsToUpdate =
+                notificationRepository.findAllByIdInAndUser(notificationIds, user);
 
-        for(Notification notification : notificationsToUpdate){
-            if (!notification.isRead() && notification.getUser().equals(user)) {
+        for (Notification notification : notificationsToUpdate) {
+            if (!notification.isRead()) {
                 notification.markAsRead();
             }
         }
     }
+
+
 
     @Transactional(readOnly = true)
     public NotificationResponse getNotifications(HttpServletRequest httpServletRequest) {

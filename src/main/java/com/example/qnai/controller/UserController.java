@@ -25,14 +25,14 @@ public class UserController {
     private final UserService userService;
 
 
-    @GetMapping("/profile")
+    @GetMapping
     @Operation(summary = "Get User Detail", description = "유저 정보 상세 조회 API")
     public ResponseEntity<ApiResponse<UserDetailResponse>> getUserDetail(HttpServletRequest httpServletRequest){
         UserDetailResponse response = userService.getUserDetail(httpServletRequest);
         return ApiResponse.ok(response, "회원 정보를 성공적으로 조회하였습니다.");
     }
 
-    @PutMapping("/info")
+    @PutMapping
     @Operation(summary = "Update User Info", description = "유저 정보 수정 API")
     public ResponseEntity<ApiResponse<UserUpdateResponse>> updateUser(HttpServletRequest httpServletRequest, @Valid @RequestBody UserUpdateRequest request){
         UserUpdateResponse response = userService.updateUser(httpServletRequest, request);
