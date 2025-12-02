@@ -23,7 +23,7 @@ public class OpenAIConfig {
                 .baseUrl("https://api.openai.com")
                 .defaultHeader("Authorization", "Bearer " + apiKey)
                 .defaultHeader("Content-Type", "application/json")
-                // 큰 응답을 받을 수 있도록 버퍼 사이즈 조정 (필요 시)
+                // 큰 응답을 받을 수 있도록 버퍼 사이즈 조정
                 .exchangeStrategies(ExchangeStrategies.builder()
                         .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(16 * 1024 * 1024))
                         .build())

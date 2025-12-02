@@ -81,6 +81,7 @@ public class TokenProvider {
         }
     }
 
+    //만료 기간 가져옴
     public Long getExpiration(String token) {
         try {
             Claims claims = Jwts.parser()

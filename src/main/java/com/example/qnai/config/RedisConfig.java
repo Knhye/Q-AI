@@ -38,11 +38,10 @@ public class RedisConfig {
         redisTemplate.setHashKeySerializer(new StringRedisSerializer());
 
         // Value 직렬화 (JSON 형태로 저장하여 객체 저장 가능)
-        // GenericJackson2JsonRedisSerializer는 모든 객체를 JSON으로 직렬화/역직렬화할 수 있습니다.
         redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
         redisTemplate.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
 
-        redisTemplate.afterPropertiesSet(); // 설정 완료 후 초기화
+        redisTemplate.afterPropertiesSet();
         return redisTemplate;
     }
 }

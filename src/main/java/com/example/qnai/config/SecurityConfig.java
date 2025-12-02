@@ -62,7 +62,6 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(
                         authorize -> authorize
-                                //엔드포인트 인가 예외 처리
                                 .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                                 .anyRequest().authenticated()
                 )
@@ -71,7 +70,6 @@ public class SecurityConfig {
                             // 인증 실패 (401 Unauthorized) 처리
                             response.setStatus(HttpStatus.UNAUTHORIZED.value());
                             response.setContentType("application/json;charset=UTF-8");
-                            // 커스텀 ApiResponse를 사용하여 응답 본문 작성
                             String json = objectMapper.writeValueAsString(ApiResponse.fail("인증에 실패하였습니다.", HttpStatus.UNAUTHORIZED));
                             response.getWriter().write(json);
                         })
@@ -98,7 +96,7 @@ public class SecurityConfig {
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // 모든 경로에 적용
+        source.registerCorsConfiguration("/**", configuration);
 
         return source;
     }
