@@ -13,9 +13,9 @@ import com.example.qnai.global.exception.ResourceNotFoundException;
 import com.example.qnai.repository.NotificationRepository;
 import com.example.qnai.repository.UserNotificationSettingRepository;
 import com.example.qnai.repository.UserRepository;
-import com.example.qnai.utils.TokenUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,12 +34,13 @@ public class NotificationService {
     private final UserNotificationSettingRepository userNotificationSettingRepository;
     private final UserRepository userRepository;
     private final ExternalPushService externalPushService;
-    private final TokenUtils tokenUtils;
 
     //구독 설정/해지
     @Transactional
     public NotificationSettingResponse notificationSetting(HttpServletRequest httpServletRequest, NotificationSettingRequest request) {
-        String email = tokenUtils.extractUserEmail(httpServletRequest);
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
 
         Users user = userRepository.findByEmailAndIsDeletedFalse(email)
                 .orElseThrow(() -> new UsernameNotFoundException("해당 유저가 존재하지 않습니다."));
@@ -110,7 +111,9 @@ public class NotificationService {
     //알림 읽음 처리
     @Transactional
     public void readNotifications(HttpServletRequest httpServletRequest, NotificationReadRequest requests) {
-        String email = tokenUtils.extractUserEmail(httpServletRequest);
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
 
         Users user = userRepository.findByEmailAndIsDeletedFalse(email)
                 .orElseThrow(() -> new UsernameNotFoundException("해당 유저는 존재하지 않습니다."));
@@ -131,7 +134,9 @@ public class NotificationService {
 
     @Transactional(readOnly = true)
     public NotificationResponse getNotifications(HttpServletRequest httpServletRequest) {
-        String email = tokenUtils.extractUserEmail(httpServletRequest);
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
 
         Users user = userRepository.findByEmailAndIsDeletedFalse(email)
                 .orElseThrow(() -> new UsernameNotFoundException("해당 유저가 존재하지 않습니다."));

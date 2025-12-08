@@ -23,6 +23,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -134,9 +135,12 @@ public class AuthService {
             refreshTokenRepository.deleteByToken(refreshToken);
         }
 
-        String username = tokenProvider.extractUsername(accessToken);
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+
         UserNotificationSetting userNotificationSetting =
-                userNotificationSettingRepository.findByUserEmail(username)
+                userNotificationSettingRepository.findByUserEmail(email)
                         .orElseThrow(() -> new ResourceNotFoundException("푸시 알림을 설정할 수 없습니다."));
 
         userNotificationSetting.unsubscribe();

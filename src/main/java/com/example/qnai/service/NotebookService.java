@@ -1,6 +1,5 @@
 package com.example.qnai.service;
 
-import com.example.qnai.config.TokenProvider;
 import com.example.qnai.dto.notebook.request.NotebookAddItemRequest;
 import com.example.qnai.dto.notebook.request.NotebookCreateRequest;
 import com.example.qnai.dto.notebook.request.NotebookExcludeItemRequest;
@@ -15,10 +14,9 @@ import com.example.qnai.global.exception.*;
 import com.example.qnai.repository.NotebookRepository;
 import com.example.qnai.repository.QnaRepository;
 import com.example.qnai.repository.UserRepository;
-import com.example.qnai.utils.TokenUtils;
-import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,12 +30,13 @@ public class NotebookService {
     private final NotebookRepository notebookRepository;
     private final UserRepository userRepository;
     private final QnaRepository qnaRepository;
-    private final TokenUtils tokenUtils;
 
     //노트북 생성
     @Transactional
     public NotebookCreateResponse createNotebook(HttpServletRequest httpServletRequest, NotebookCreateRequest request) {
-        String email = tokenUtils.extractUserEmail(httpServletRequest);
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
 
         Users user = userRepository.findByEmailAndIsDeletedFalse(email)
                 .orElseThrow(() -> new UsernameNotFoundException("유저가 존재하지 않습니다."));
@@ -65,7 +64,9 @@ public class NotebookService {
         QnA qnA = qnaRepository.findByIdAndIsDeletedFalse(request.getQnaId())
                 .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
 
-        String email = tokenUtils.extractUserEmail(httpServletRequest);
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
 
         if(!Objects.equals(notebook.getUser().getEmail(), email) || !Objects.equals(qnA.getUser().getEmail(), email)){
             throw new NotAcceptableUserException("다른 유저의 노트북 또는 질의응답에 접근할 수 없습니다.");
@@ -86,7 +87,9 @@ public class NotebookService {
         Notebook notebook = notebookRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("해당 노트북이 존재하지 않습니다."));
 
-        String email = tokenUtils.extractUserEmail(httpServletRequest);
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
 
         if(!notebook.getUser().getEmail().equals(email)){
             throw new NotAcceptableUserException("다른 유저의 노트북에 접근할 수 없습니다.");
@@ -104,7 +107,9 @@ public class NotebookService {
         QnA qnA = qnaRepository.findByIdAndIsDeletedFalse(request.getQnaId())
                 .orElseThrow(() -> new ResourceNotFoundException("해당 질의응답이 존재하지 않습니다."));
 
-        String email = tokenUtils.extractUserEmail(httpServletRequest);
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
 
         if(!notebook.getUser().getEmail().equals(email) || !qnA.getUser().getEmail().equals(email)){
             throw new NotAcceptableUserException("다른 유저의 노트북 또는 질의응답에 접근할 수 없습니다.");
@@ -123,7 +128,9 @@ public class NotebookService {
     @Transactional(readOnly = true)
     public List<NotebookListResponse> getNotebookList(HttpServletRequest httpServletRequest) {
         List<Notebook> notebookList = notebookRepository.findAllByUserEmailAndIsDeletedFalse(
-                tokenUtils.extractUserEmail(httpServletRequest)
+                SecurityContextHolder.getContext()
+                        .getAuthentication()
+                        .getName()
         );
 
         return notebookList.stream()
@@ -141,7 +148,9 @@ public class NotebookService {
         Notebook notebook = notebookRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("해당 노트북을 찾을 수 없습니다."));
 
-        String email = tokenUtils.extractUserEmail(httpServletRequest);
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
 
         if(!notebook.getUser().getEmail().equals(email)){
             throw new NotAcceptableUserException("다른 유저의 노트북에 접근할 수 없습니다.");

@@ -1,5 +1,8 @@
 package com.example.qnai.config;
 
+import com.example.qnai.global.exception.InvalidTokenException;
+import com.example.qnai.global.exception.JwtAuthenticationException;
+import com.example.qnai.global.exception.NotLoggedInException;
 import com.example.qnai.repository.BlacklistRepository;
 import com.example.qnai.service.UserService;
 import jakarta.servlet.FilterChain;
@@ -39,29 +42,45 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String header = request.getHeader("Authorization");
 
         try {
-            if (header != null && header.startsWith("Bearer ")) {
-                String token = header.substring(7);
-
-                if (tokenProvider.validateToken(token)) {
-                    if (blacklistRepository.isBlacklisted(token)) {
-                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                                "로그아웃된 토큰입니다.");
-                        return;
-                    }
-
-                    String username = tokenProvider.extractUsername(token);
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-                    UsernamePasswordAuthenticationToken authenticationToken =
-                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-
-                    authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                    SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-                }
+            if (header == null) {
+                throw new JwtAuthenticationException("Authorization 헤더가 없습니다.");
             }
-        } catch(Exception e){
+
+            if (!header.startsWith("Bearer ")) {
+                throw new JwtAuthenticationException("Authorization 형식이 올바르지 않습니다.");
+            }
+
+            String token = header.substring(7);
+
+            if (!tokenProvider.validateToken(token)) {
+                throw new JwtAuthenticationException("유효하지 않은 Access Token입니다.");
+            }
+
+            if (blacklistRepository.isBlacklisted(token)) {
+                throw new JwtAuthenticationException("로그아웃된 토큰입니다.");
+            }
+
+            String username = tokenProvider.extractUsername(token);
+            if (username == null || username.isEmpty()) {
+                throw new JwtAuthenticationException("이메일을 추출할 수 없습니다.");
+            }
+
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
+
+            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+        } catch(JwtAuthenticationException e){
             SecurityContextHolder.clearContext();
+            request.setAttribute("jwtException", e);
+            throw e;
         }
 
         filterChain.doFilter(request, response);

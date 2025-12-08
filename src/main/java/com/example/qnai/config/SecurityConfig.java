@@ -68,10 +68,17 @@ public class SecurityConfig {
                 .exceptionHandling(handling -> handling
                         .authenticationEntryPoint((request, response, authException) -> {
                             // 인증 실패 (401 Unauthorized) 처리
+                            String msg = "인증에 실패하였습니다.";
+                            Exception jwtEx = (Exception) request.getAttribute("jwtException");
+                            if (jwtEx != null) {
+                                msg = jwtEx.getMessage();
+                            }
+
                             response.setStatus(HttpStatus.UNAUTHORIZED.value());
                             response.setContentType("application/json;charset=UTF-8");
-                            String json = objectMapper.writeValueAsString(ApiResponse.fail("인증에 실패하였습니다.", HttpStatus.UNAUTHORIZED));
-                            response.getWriter().write(json);
+                            response.getWriter().write(
+                                    objectMapper.writeValueAsString(ApiResponse.fail(msg, HttpStatus.UNAUTHORIZED))
+                            );
                         })
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
                             // 인가 실패 (403 Forbidden) 처리
